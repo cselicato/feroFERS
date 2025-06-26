@@ -22,7 +22,7 @@ def decode(file_path):
 
 
     # access data in the csv file
-    df = pd.read_csv(file_path, sep=",",comment="/", nrows=50,
+    df = pd.read_csv(file_path, sep=",",comment="/", #nrows=50,
                        dtype={"TStamp_us":float,"Trg_Id":int,"Board_Id":int,
                               "Num_Hits":int,"ChannelMask":str,"CH_Id":int,
                               "DataType":str,"PHA_LG":int,"PHA_HG":int})
@@ -78,6 +78,55 @@ def decode(file_path):
     return
 
 
+def get_info(file_path) :
+    out_file = ROOT.TFile(file_path.partition(".")[0]+"_info.root", "recreate")
+    tree = ROOT.TTree("data","data")
+    info = {}
+    # access info on the acquisition
+    with open(file_path, 'r') as f:
+        for line in f:
+            if line.startswith('//*'):
+                pass            
+            elif line.startswith('//'):
+                line = line.replace("\n", "")
+                line = line.replace("//", "")
+                key = line.partition(":")[0]
+                value = line.partition(":")[2]
+                info[key] = value
+                print(key)
+            else:
+                break
+    print(info)
+
+    Board = np.array([info["Board"]], dtype=int)
+    File_Format_Version = np.array([info["File_Format_Version"]], dtype=float)
+    Janus_Release = np.array([info["Janus_Release"]], dtype=str)
+    Acquisition_Mode = np.array([info["Acquisition_Mode"]], dtype=str)
+    Energy_Histo_NBins = np.array([info["Energy_Histo_NBins"]], dtype=int)
+    Run = np.array([info["Run#"]], dtype=int)
+    Start_Time_Epoch = np.array([info["Start_Time_Epoch"]], dtype=int)
+    Start_Time_DateTime_UTC = np.array([info["Start_Time_DateTime_UTC"]], dtype=str)
+
+    tree.Branch("Board", Board,  'Board/I')
+    tree.Branch("File_Format_Version", File_Format_Version,  'File_Format_Version/D')
+    tree.Branch("Janus_Release", Janus_Release,  'Janus_Release/C')
+    tree.Branch("Acquisition_Mode", Acquisition_Mode,  'Acquisition_Mode/C')
+    tree.Branch("Energy_Histo_NBins", Energy_Histo_NBins,  'Energy_Histo_NBins/I')
+    tree.Branch("Run", Run,  'Run/I')
+    tree.Branch("Start_Time_Epoch", Start_Time_Epoch,  'Start_Time_Epoch/I')
+    tree.Branch("Start_Time_DateTime_UTC", Start_Time_DateTime_UTC,  'Start_Time_DateTime_UTC/C')
+
+
+    # for i in np.range(0, NBOARD, 1):
+        # tree.Branch("Board%d"%i, Board[i],  'Board%d/I'%i)
+
+
+
+    tree.Fill()
+    out_file.Write()
+    out_file.Close()
+    # rdf = ROOT.RDF.FromNumpy(info)
+    # rdf.Snapshot("tree", file_path.partition(".")[0]+"_info.root")
 
 
 if __name__ == "__main__":
