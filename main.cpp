@@ -21,11 +21,30 @@ void read_csv(const string& filepath, int N_boards=1){
     int line_count = 0;
     string line;
     vector<vector<string>> data;
+    vector<vector<string>> metadata;
 
     while (getline(file, line)){
-        if (line[0] == *"/"){
+        // if (line[0] == *"/"){ // skip the header lines
+        //     continue;
+        // }
+
+        if (line[2] == *"*"){
             continue;
         }
+        else if (line[0] == *"/")
+        {
+            vector<string> row;
+            stringstream ss(line);
+            string value;
+
+            while (getline(ss, value, ':')) {
+                row.push_back(value);
+            }
+
+            metadata.push_back(row);
+        }
+        
+        else {       
         vector<string> row;
         stringstream ss(line);
         string value;
@@ -35,11 +54,37 @@ void read_csv(const string& filepath, int N_boards=1){
         }
 
         data.push_back(row);
-        line_count+=1;
+        line_count+=1;}
+
+
     } 
 
-    // create tree to store the variables and the info about the acquisition
+    // get metadata
+    int board_mod = stoi(metadata[0][1]);
+    TString file_format = metadata[1][1];
+    TString janus_rel = metadata[2][1];
+    TString acq_mode = metadata[3][1];
+    int e_Nbins = stoi(metadata[4][1]);
+    int run = stoi(metadata[5][1]);
+    char * pEnd;
+    UInt_t time_epoch = strtol(metadata[6][1].c_str(),&pEnd,10); // non ho capito
+    TString time_UTC = metadata[7][1];
+
+    // create information tree anf fill it with the metadata
     TTree *tr_info = new TTree("info","info");
+    tr_info->Branch("board_mod", &board_mod);
+    tr_info->Branch("file_format", &file_format);
+    tr_info->Branch("janus_rel", &janus_rel);
+    tr_info->Branch("acq_mode", &acq_mode);
+    tr_info->Branch("e_Nbins", &e_Nbins);
+    tr_info->Branch("run", &run);
+    tr_info->Branch("time_epoch", &time_epoch, "time_epoch/i");
+    tr_info->Branch("time_UTC", &time_UTC);
+
+    tr_info->Fill();
+
+
+    // create tree to store the variables and the info about the acquisition
     TTree *tr_data = new TTree("data","data");
     unsigned long long Trg_Id;
     double TStamp;
@@ -124,9 +169,13 @@ void read_csv(const string& filepath, int N_boards=1){
     cout << r << endl;
     cout << new_events*64 << endl;
 
+    // get metadata and store it in the information tree
+
     // write output file
     TFile fout("test_files/test.root", "recreate");
     tr_data->Write();
+    tr_info->Write();
+
     fout.Close();
 
 }

@@ -27,8 +27,8 @@ int open_tree(){
     tree->SetBranchAddress("PHA_LG", &LG);
     tree->SetBranchAddress("PHA_HG", &HG);
 
-    TH1F * h_lg = new TH1F("h_lg","h_lg",4096,0,4096);
-    TH1F * h_hg = new TH1F("h_hg","h_hg",4096,0,4096);
+    TH1F * h_lg = new TH1F("h_lg","Low gain; Value [a.u]; Counts",4096,0,4096);
+    TH1F * h_hg = new TH1F("h_hg","High gain; Value [a.u]; Counts",4096,0,4096);
 
     for (int i=0; i<entries; i++){
         tree->GetEntry(i);
@@ -41,6 +41,40 @@ int open_tree(){
     h_lg->Draw();
     TCanvas * c_2 = new TCanvas();
     h_hg->Draw();
+
+
+    // check information tree
+    TTree * tree_info = (TTree *)file->Get("info");
+
+    int board_mod;
+    int e_Nbins;
+    int run;
+    UInt_t time_epoch;
+    // TString * file_format, *janus_rel, *acq_mode, *time_UTC;
+
+    TString * file_format = new TString(); 
+    TString * janus_rel = new TString(); 
+    TString * acq_mode = new TString(); 
+    TString * time_UTC = new TString(); 
+
+    tree_info->SetBranchAddress("board_mod", &board_mod);
+    tree_info->SetBranchAddress("file_format", &file_format);
+    tree_info->SetBranchAddress("janus_rel", &janus_rel);
+    tree_info->SetBranchAddress("acq_mode", &acq_mode);
+    tree_info->SetBranchAddress("e_Nbins", &e_Nbins);
+    tree_info->SetBranchAddress("run", &run);
+    tree_info->SetBranchAddress("time_epoch", &time_epoch);
+    tree_info->SetBranchAddress("time_UTC", &time_UTC);
+
+    tree_info->GetEntry(0);
+    cout << "board model: "<< board_mod << endl;
+    cout << "file_format: "<< *file_format << endl;
+    cout << "janus_rel: "<< *janus_rel << endl;
+    cout << "acq_mode: "<< *acq_mode << endl;
+    cout << "e_Nbins: "<< e_Nbins << endl;
+    cout << "run: "<< run << endl;
+    cout << "time_epoch: "<< time_epoch << endl;
+    cout << "time_UTC: "<< *time_UTC << endl;
 
     return 1;
 }
