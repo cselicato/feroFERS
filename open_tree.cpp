@@ -7,41 +7,51 @@
 #include "TTree.h"
 #include "TH1F.h"
 #include "TCanvas.h"
+#include "TH2D.h"
 
 using namespace std;
 
 int open_tree(){
     int N_boards=1;
     
-    TFile * file = new TFile("test_files/test.root", "read");
+    TFile * file = new TFile("Run6.root", "read");
     if (!file || file->IsZombie()) {
         cerr << "Unable to open ROOT file." << endl;
         return 0;    
         }
     
-    TTree * tree = (TTree *)file->Get("data");
+    TTree * tree = (TTree *)file->Get("datas");
     int entries = tree->GetEntries();
+    tree->Print();
 
     int LG[1][64];
     int HG[1][64];
+    double TStamp;
     tree->SetBranchAddress("PHA_LG", &LG);
     tree->SetBranchAddress("PHA_HG", &HG);
+    tree->SetBranchAddress("TStamp",&TStamp);
 
     TH1F * h_lg = new TH1F("h_lg","Low gain; Value [a.u]; Counts",4096,0,4096);
     TH1F * h_hg = new TH1F("h_hg","High gain; Value [a.u]; Counts",4096,0,4096);
 
+    TH2D * h_2 = new TH2D("hg_vs_c","hg_vs_c",4096,0,2602956.56,4096,0,4096);
+
     for (int i=0; i<entries; i++){
         tree->GetEntry(i);
-        for (int j=0; j<64; j++){
-            h_lg->Fill(LG[0][j]);
-            h_hg->Fill(HG[0][j]);
+        for (int b=0; b<N_boards; b++){
+            for (int j=0; j<64; j++){
+                h_lg->Fill(LG[b][j]);
+                h_hg->Fill(HG[b][j]);
+                h_2->Fill(TStamp,HG[0][j]);
+            }
         }
     }
     TCanvas * c_1 = new TCanvas();
     h_lg->Draw();
     TCanvas * c_2 = new TCanvas();
     h_hg->Draw();
-
+    TCanvas * c_3 = new TCanvas();
+    h_2->Draw();
 
     // check information tree
     TTree * tree_info = (TTree *)file->Get("info");
