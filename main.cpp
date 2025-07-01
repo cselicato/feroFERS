@@ -235,7 +235,8 @@ void read_csv(const string& filepath, int N_boards=1){
 
                 vector<vector<string>> event_block(start, end);
                 Trg_Id = pr_tr_ID;
-                TStamp = stod(data[r-1][0]);
+                TStamp = stold(data[r-1][0]);
+                cout << TStamp << endl;
                 hits = stoi(data[r-1][3]);
                 
                 for (int i=0; i<event_block.size(); i++){
@@ -263,7 +264,7 @@ void read_csv(const string& filepath, int N_boards=1){
 
                 vector<vector<string>> event_block(start, end);
                 Trg_Id = pr_tr_ID;
-                TStamp = stod(data[r-1][0]);
+                TStamp = stold(data[r-1][0]);
                 hits = stoi(data[r-1][3]);
                 
                 for (int i=0; i<event_block.size(); i++){
