@@ -14,7 +14,7 @@ using namespace std;
 int open_tree(){
     int N_boards=1;
     
-    TFile * file = new TFile("Run6.root", "read");
+    TFile * file = new TFile("test_files/PHA/Run14_list.root", "read");
     if (!file || file->IsZombie()) {
         cerr << "Unable to open ROOT file." << endl;
         return 0;    
@@ -31,8 +31,8 @@ int open_tree(){
     tree->SetBranchAddress("PHA_HG", &HG);
     tree->SetBranchAddress("TStamp",&TStamp);
 
-    TH1F * h_lg = new TH1F("h_lg","Low gain; Value [a.u]; Counts",4096,0,4096);
-    TH1F * h_hg = new TH1F("h_hg","High gain; Value [a.u]; Counts",4096,0,4096);
+    TH1F * h_lg = new TH1F("h_lg","Low gain; Value [a.u]; Counts",4096,-5,5002);
+    TH1F * h_hg = new TH1F("h_hg","High gain; Value [a.u]; Counts",4096,-5,5002);
 
     TH2D * h_2 = new TH2D("hg_vs_c","hg_vs_c",4096,0,2602956.56,4096,0,4096);
 
