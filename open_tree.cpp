@@ -14,7 +14,10 @@ using namespace std;
 int open_tree(){
     int N_boards=1;
     
-    TFile * file = new TFile("test_files/PHA/Run14_list.root", "read");
+    string filepath;
+    cin >> filepath;
+    
+    TFile * file = new TFile(filepath.c_str(), "read");
     if (!file || file->IsZombie()) {
         cerr << "Unable to open ROOT file." << endl;
         return 0;    
@@ -27,9 +30,12 @@ int open_tree(){
     int LG[1][64];
     int HG[1][64];
     double TStamp;
+    TString * data_type = new TString(); 
+
     tree->SetBranchAddress("PHA_LG", &LG);
     tree->SetBranchAddress("PHA_HG", &HG);
     tree->SetBranchAddress("TStamp",&TStamp);
+    tree->SetBranchAddress("data_type",&data_type);
 
     TH1F * h_lg = new TH1F("h_lg","Low gain; Value [a.u]; Counts",4096,-5,5002);
     TH1F * h_hg = new TH1F("h_hg","High gain; Value [a.u]; Counts",4096,-5,5002);
@@ -66,6 +72,7 @@ int open_tree(){
     TString * janus_rel = new TString(); 
     TString * acq_mode = new TString(); 
     TString * time_UTC = new TString(); 
+    TString * ch_mask = new TString(); 
 
     tree_info->SetBranchAddress("board_mod", &board_mod);
     tree_info->SetBranchAddress("file_format", &file_format);
@@ -75,6 +82,7 @@ int open_tree(){
     tree_info->SetBranchAddress("run", &run);
     tree_info->SetBranchAddress("time_epoch", &time_epoch);
     tree_info->SetBranchAddress("time_UTC", &time_UTC);
+    tree_info->SetBranchAddress("ch_mask", &ch_mask);
 
     tree_info->GetEntry(0);
     cout << "board model: "<< board_mod << endl;
@@ -85,6 +93,8 @@ int open_tree(){
     cout << "run: "<< run << endl;
     cout << "time_epoch: "<< time_epoch << endl;
     cout << "time_UTC: "<< *time_UTC << endl;
+    cout << "ch_mask: "<< *ch_mask << endl;
+
 
     return 1;
 }
