@@ -5,10 +5,24 @@
 #include <vector>
 #include "TFile.h"
 #include "TTree.h"
+#include <TStopwatch.h>
 
 using namespace std;
 
-void read_csv(const string& filepath, int N_boards=1){
+vector<string> split_line(string line, char delimiter){
+    vector<string> line_content={};
+    stringstream ss(line);
+    string value;
+    while (getline(ss, value, delimiter)) {
+        line_content.push_back(value);    }
+
+    return line_content;
+}
+
+void read_csv(const string& filepath, int N_boards){
+
+    TStopwatch timer;
+    timer.Start();
     
     fstream file;
     file.open(filepath, ios::in);
@@ -20,31 +34,25 @@ void read_csv(const string& filepath, int N_boards=1){
     cout << "Opened file: " << filepath << endl;
 
     string line;
-    vector<vector<string>> data;
-    vector<vector<string>> metadata;
+    vector<vector<string>> data, metadata;
 
     // read file
     while (getline(file, line)){
-        if (line[2] == *"*"){
+        if (line[2] == '*'){
             continue;        }
 
-        else if (line[0] == *"/"){
-            vector<string> row;
-            stringstream ss(line);
-            string value;
-            while (getline(ss, value, ':')) {
-                row.push_back(value);    }
+        else if (line[0] == '/'){
+            vector<string> row = split_line(line, ':');
             metadata.push_back(row);
         }
         else {       
-            vector<string> row;
-            stringstream ss(line);
-            string value;
-            while (getline(ss, value, ',')) {
-                row.push_back(value);    }
+            vector<string> row = split_line(line, ',');
             data.push_back(row);
         }
     } 
+
+    // remove first row (it contains the names of the columns)
+    data.erase(data.begin());
 
     // get metadata
     // (up to the acquisition mode all the files have the same format)
@@ -77,21 +85,19 @@ void read_csv(const string& filepath, int N_boards=1){
     tr_data->Branch("TStamp",&TStamp, "TStamp/D");
     tr_data->Branch("Num_Hits",&hits, "Num_Hits/I");
 
+    int empty = -2;
+
     if (acq_mode.CompareTo("Spectroscopy")==0){
         cout << "The acquisition mode is Spectroscopy." << endl;
         // get the remaining metadata
         int e_Nbins = stoi(metadata[4][1]);
         run = stoi(metadata[5][1]);
-        char * pEnd;
-        time_epoch = strtol(metadata[6][1].c_str(),&pEnd,10); // ?
+        time_epoch = stoul(metadata[6][1]);
         time_UTC = metadata[7][1];        
         TString ch_mask = data[1][4];
 
         // create branches for the info tree and fill it with the metadata
         tr_info->Branch("e_Nbins", &e_Nbins);
-        tr_info->Branch("run", &run);
-        tr_info->Branch("time_epoch", &time_epoch, "time_epoch/i");
-        tr_info->Branch("time_UTC", &time_UTC);
         tr_info->Branch("ch_mask", &ch_mask);
 
         tr_info->Fill(); // this tree needs to be filled only once
@@ -99,29 +105,21 @@ void read_csv(const string& filepath, int N_boards=1){
         // create branches to store the recorded data
         TString data_type;
         unsigned long long Trg_Id;
-        int LG[N_boards][64];
-        int HG[N_boards][64];
-        // initialize all values to -1
-        for (int i=0; i<N_boards; i++){
-            for (int j=0; j<64; j++){
-                LG[i][j] = -1;
-                HG[i][j] = -1;  }
-        }
+        Int_t LG[N_boards][64];
+        Int_t HG[N_boards][64];
+        // initialize all values
+        fill(&LG[0][0],&LG[0][0]+N_boards*64, empty);
+        fill(&HG[0][0],&LG[0][0]+N_boards*64, empty);
+
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
         tr_data->Branch("data_type", &data_type);
         tr_data->Branch("PHA_LG",&LG,Form("LG[%i][64]/I",N_boards));
         tr_data->Branch("PHA_HG",&HG,Form("HG[%i][64]/I",N_boards));
 
-        // vector containing the column names:
-        vector<string> col_names = data[0];
-
         unsigned long long r;
         unsigned long long cur_tr_ID, pr_tr_ID;
         int ch_ID, pha_lg, pha_hg, board;
 
-        // remove first row (it contains the names of the columns)
-        data.erase(data.begin());
-        
         unsigned long long ev_start = 0;
         for (r=1; r<data.size(); r++){  // to compare each row to the previous one the first index must be 1
             cur_tr_ID = stoi(data[r][1]);
@@ -137,8 +135,8 @@ void read_csv(const string& filepath, int N_boards=1){
                 TStamp = stold(data[r-1][0]);
                 hits = stoi(data[r-1][3]);
                 data_type = data[r-1][6];
-
-                for (int i=0; i<event_block.size(); i++){
+                
+                for (long unsigned int i=0; i<event_block.size(); i++){
                     ch_ID = stoi(event_block[i][5]);
                     pha_lg= stoi(event_block[i][7]); 
                     pha_hg= stoi(event_block[i][8]); 
@@ -165,8 +163,7 @@ void read_csv(const string& filepath, int N_boards=1){
         Float_t time_LSB = stof(metadata[5][1]);
         TString time_unit = metadata[6][1];
         run = stoi(metadata[7][1]);
-        char * pEnd;
-        time_epoch = strtol(metadata[8][1].c_str(),&pEnd,10); // ?
+        time_epoch = stoul(metadata[6][1]);
         time_UTC = metadata[9][1];
         TString ch_mask = data[1][4];
 
@@ -185,14 +182,12 @@ void read_csv(const string& filepath, int N_boards=1){
         Int_t HG[N_boards][64];
         Double_t ToA[N_boards][64];
         Double_t ToT[N_boards][64];
-        // initialize all values to -1
-        for (int i=0; i<N_boards; i++){
-            for (int j=0; j<64; j++){
-                LG[i][j] = -1;
-                HG[i][j] = -1;  
-                ToA[i][j] =(Double_t) -1.;
-                ToT[i][j] =(Double_t) -1.;  }
-        }
+        // initialize all values
+        fill(&LG[0][0],&LG[0][0]+N_boards*64, empty);
+        fill(&HG[0][0],&LG[0][0]+N_boards*64, empty);
+        fill(&ToA[0][0],&ToA[0][0]+N_boards*64, empty);
+        fill(&ToT[0][0],&ToT[0][0]+N_boards*64, empty);
+
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
         tr_data->Branch("data_type", &data_type);
         tr_data->Branch("PHA_LG",&LG,Form("LG[%i][64]/I",N_boards));
@@ -200,15 +195,9 @@ void read_csv(const string& filepath, int N_boards=1){
         tr_data->Branch("ToA",&ToA, Form("ToA[%i][64]/D",N_boards));
         tr_data->Branch("ToT",&ToT, Form("ToT[%i][64]/D",N_boards));
 
-        // vector containing the column names:
-        vector<string> col_names = data[0];
-
         unsigned long long r;
         unsigned long long cur_tr_ID, pr_tr_ID;
         int ch_ID, board;
-
-        // remove first row (it contains the names of the columns)
-        data.erase(data.begin());
 
         unsigned long long ev_start = 0;
         for (r=1; r<data.size(); r++){  // to compare each row to the previous one the first index must be 1
@@ -254,8 +243,7 @@ void read_csv(const string& filepath, int N_boards=1){
         Float_t time_LSB = stof(metadata[4][1]);
         TString time_unit = metadata[5][1];
         run = stoi(metadata[6][1]);
-        char * pEnd;
-        time_epoch = strtol(metadata[7][1].c_str(),&pEnd,10); // ?
+        time_epoch = stoul(metadata[6][1]);
         time_UTC = metadata[8][1];  
         // create branches for the info tree and fill it with the metadata
         tr_info->Branch("time_LSB", &time_LSB, "time_LSB/F");
@@ -268,25 +256,18 @@ void read_csv(const string& filepath, int N_boards=1){
         TString data_type;
         Double_t ToA[N_boards][64];
         Double_t ToT[N_boards][64];
+        // initialize all values
+        fill(&ToA[0][0],&ToA[0][0]+N_boards*64, empty);
+        fill(&ToT[0][0],&ToT[0][0]+N_boards*64, empty);
         // initialize all values to -1
-        for (int i=0; i<N_boards; i++){
-            for (int j=0; j<64; j++){
-                ToA[i][j] =(Double_t) -1.;
-                ToT[i][j] =(Double_t) -1.;  }
-        }
+
         tr_data->Branch("data_type", &data_type);
         tr_data->Branch("ToA",&ToA, Form("ToA[%i][64]/D",N_boards));
         tr_data->Branch("ToT",&ToT, Form("ToT[%i][64]/D",N_boards));
 
-        // vector containing the column names:
-        vector<string> col_names = data[0];
-
         unsigned long long r;
         Double_t cur_tr_T, pr_tr_T;
         int ch_ID, board;
-
-        // remove first row (it contains the names of the columns)
-        data.erase(data.begin());
 
         unsigned long long ev_start = 0;
         for (r=1; r<data.size(); r++){  // to compare each row to the previous one the first index must be 1
@@ -325,8 +306,7 @@ void read_csv(const string& filepath, int N_boards=1){
 
         // get the remaining metadata and fill the tree
         run = stoi(metadata[4][1]);
-        char * pEnd;
-        time_epoch = strtol(metadata[5][1].c_str(),&pEnd,10); // ?
+        time_epoch = stoul(metadata[5][1]);
         time_UTC = metadata[6][1];  
         TString ch_mask = data[1][4];
 
@@ -336,23 +316,15 @@ void read_csv(const string& filepath, int N_boards=1){
         // create branches to store the recorded data
         Int_t Trg_Id;
         Int_t counts[N_boards][64];
-        // initialize all values to -1
-        for (int i=0; i<N_boards; i++){
-            for (int j=0; j<64; j++){
-                counts[i][j] = -1.;   }
-        }
+        // initialize all values
+        fill(&counts[0][0],&counts[0][0]+N_boards*64, empty);
+
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/I");
         tr_data->Branch("counts",&counts, Form("counts[%i][64]/I",N_boards));
-
-        // vector containing the column names:
-        vector<string> col_names = data[0];
 
         unsigned long long r;
         Int_t cur_tr_ID, pr_tr_ID;
         int ch_ID, board;
-
-        // remove first row (it contains the names of the columns)
-        data.erase(data.begin());
 
         unsigned long long ev_start = 0;
         for (r=1; r<data.size(); r++){  // to compare each row to the previous one the first index must be 1
@@ -396,12 +368,18 @@ void read_csv(const string& filepath, int N_boards=1){
     // close file
     fout.Close();
 
+    timer.Stop();
+
+    std::cout << "Real time: " << timer.RealTime() << " seconds\n";
+    std::cout << "CPU time: " << timer.CpuTime() << " seconds\n";
+
 }
 
 int main(){
     string filepath;
     cin >> filepath;
-    read_csv(filepath);
+    int N = 1;
+    read_csv(filepath, N);
 
     return 1;
 }
