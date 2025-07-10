@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <set>
 #include "TFile.h"
 #include "TTree.h"
 #include <TStopwatch.h>
@@ -14,10 +15,18 @@ vector<string> split_line(string line, char delimiter){
     stringstream ss(line);
     string value;
     while (getline(ss, value, delimiter)) {
-        line_content.push_back(value);    }
+        if (!value.empty()){
+        line_content.push_back(value);}    }
 
     return line_content;
 }
+
+bool consistent_ind(int board,int ch,int N_boards){
+    if((board<=N_boards)&&(ch<64)){
+        return true;    }
+    else {return false;}
+}
+
 
 void read_csv(const string& filepath, int N_boards){
 
@@ -35,25 +44,34 @@ void read_csv(const string& filepath, int N_boards){
 
     string line;
     vector<vector<string>> data, metadata;
+    set<size_t> row_sizes;
 
     // read file
     while (getline(file, line)){
-        if (line[2] == '*'){
-            continue;        }
+        if (line.empty()==false){
+            if (line[2] == '*'){
+                continue;        }
 
-        else if (line[0] == '/'){
-            vector<string> row = split_line(line, ':');
-            metadata.push_back(row);
-        }
-        else {       
-            vector<string> row = split_line(line, ',');
-            data.push_back(row);
-        }
+            else if (line[0] == '/'){
+                vector<string> row = split_line(line, ':');
+                metadata.push_back(row);
+            }
+            else {       
+                vector<string> row = split_line(line, ',');
+                data.push_back(row);
+                row_sizes.insert(row.size());
+            }}
     } 
-
+    
     // remove first row (it contains the names of the columns)
     data.erase(data.begin());
-
+    // check consistency of the file (must have a constant number of columns.)
+    if (row_sizes.size() != 1){
+        cout << "The file " << filepath <<" has inconsistent columns." << endl;
+        cout << "No output file was created." << endl;
+        return;
+    }
+    
     // get metadata
     // (up to the acquisition mode all the files have the same format)
     int board_mod = stoi(metadata[0][1]);
@@ -85,7 +103,7 @@ void read_csv(const string& filepath, int N_boards){
     tr_data->Branch("TStamp",&TStamp, "TStamp/D");
     tr_data->Branch("Num_Hits",&hits, "Num_Hits/I");
 
-    int empty = -2;
+    int masked = -2;
 
     if (acq_mode.CompareTo("Spectroscopy")==0){
         cout << "The acquisition mode is Spectroscopy." << endl;
@@ -108,8 +126,8 @@ void read_csv(const string& filepath, int N_boards){
         Int_t LG[N_boards][64];
         Int_t HG[N_boards][64];
         // initialize all values
-        fill(&LG[0][0],&LG[0][0]+N_boards*64, empty);
-        fill(&HG[0][0],&LG[0][0]+N_boards*64, empty);
+        fill(&LG[0][0],&LG[0][0]+N_boards*64, masked);
+        fill(&HG[0][0],&LG[0][0]+N_boards*64, masked);
 
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
         tr_data->Branch("data_type", &data_type);
@@ -141,8 +159,14 @@ void read_csv(const string& filepath, int N_boards){
                     pha_lg= stoi(event_block[i][7]); 
                     pha_hg= stoi(event_block[i][8]); 
                     board= stoi(event_block[i][2]);
+                    if(consistent_ind(board, ch_ID,N_boards)){
                     LG[board][ch_ID] = pha_lg;
-                    HG[board][ch_ID] = pha_hg;
+                    HG[board][ch_ID] = pha_hg;}
+                    else {
+                        cout << "Board ID" << board << " and ch. ID " << ch_ID << " are invalid."<< endl;
+                        cout << "File conversion failed." << endl;
+                        return;
+                    }
                 }
 
                 tr_data->Fill();
@@ -183,10 +207,10 @@ void read_csv(const string& filepath, int N_boards){
         Double_t ToA[N_boards][64];
         Double_t ToT[N_boards][64];
         // initialize all values
-        fill(&LG[0][0],&LG[0][0]+N_boards*64, empty);
-        fill(&HG[0][0],&LG[0][0]+N_boards*64, empty);
-        fill(&ToA[0][0],&ToA[0][0]+N_boards*64, empty);
-        fill(&ToT[0][0],&ToT[0][0]+N_boards*64, empty);
+        fill(&LG[0][0],&LG[0][0]+N_boards*64, masked);
+        fill(&HG[0][0],&LG[0][0]+N_boards*64, masked);
+        fill(&ToA[0][0],&ToA[0][0]+N_boards*64, masked);
+        fill(&ToT[0][0],&ToT[0][0]+N_boards*64, masked);
 
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
         tr_data->Branch("data_type", &data_type);
@@ -217,13 +241,21 @@ void read_csv(const string& filepath, int N_boards){
                 
                 for (int i=0; i<event_block.size(); i++){
                     board= stoi(event_block[i][2]);
-                    ch_ID = stoi(event_block[i][5]);                    
-                    // store the spectroscopy data
-                    LG[board][ch_ID] = stoi(event_block[i][7]);
-                    HG[board][ch_ID] = stoi(event_block[i][8]);
-                    // store the timing data
-                    ToA[board][ch_ID] = (Double_t)stod(event_block[i][9]);
-                    ToT[board][ch_ID] = (Double_t)stod(event_block[i][10]);
+                    ch_ID = stoi(event_block[i][5]);      
+                    if(consistent_ind(board, ch_ID,N_boards)){
+                        // store the spectroscopy data
+                        LG[board][ch_ID] = stoi(event_block[i][7]);
+                        HG[board][ch_ID] = stoi(event_block[i][8]);
+                        // store the timing data
+                        ToA[board][ch_ID] = (Double_t)stod(event_block[i][9]);
+                        ToT[board][ch_ID] = (Double_t)stod(event_block[i][10]);
+                    }
+                    else {
+                        cout << "Board ID" << board << " and ch. ID " << ch_ID << " are invalid."<< endl;
+                        cout << "File conversion failed." << endl;
+                        return;
+                    }              
+
                 }
 
                 tr_data->Fill();
@@ -257,8 +289,8 @@ void read_csv(const string& filepath, int N_boards){
         Double_t ToA[N_boards][64];
         Double_t ToT[N_boards][64];
         // initialize all values
-        fill(&ToA[0][0],&ToA[0][0]+N_boards*64, empty);
-        fill(&ToT[0][0],&ToT[0][0]+N_boards*64, empty);
+        fill(&ToA[0][0],&ToA[0][0]+N_boards*64, masked);
+        fill(&ToT[0][0],&ToT[0][0]+N_boards*64, masked);
         // initialize all values to -1
 
         tr_data->Branch("data_type", &data_type);
@@ -287,9 +319,10 @@ void read_csv(const string& filepath, int N_boards){
                 for (int i=0; i<event_block.size(); i++){
                     board= stoi(event_block[i][1]);
                     ch_ID = stoi(event_block[i][3]);                    
+
                     // store the timing data
                     ToA[board][ch_ID] = (Double_t)stod(event_block[i][5]);
-                    // ToT[board][ch_ID] = (Double_t)stod(event_block[i][6]);
+                    ToT[board][ch_ID] = (Double_t)stod(event_block[i][6]);
                 }
 
                 tr_data->Fill();
@@ -317,7 +350,7 @@ void read_csv(const string& filepath, int N_boards){
         Int_t Trg_Id;
         Int_t counts[N_boards][64];
         // initialize all values
-        fill(&counts[0][0],&counts[0][0]+N_boards*64, empty);
+        fill(&counts[0][0],&counts[0][0]+N_boards*64, masked);
 
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/I");
         tr_data->Branch("counts",&counts, Form("counts[%i][64]/I",N_boards));
@@ -343,9 +376,17 @@ void read_csv(const string& filepath, int N_boards){
                 
                 for (int i=0; i<event_block.size(); i++){
                     board= stoi(event_block[i][2]);
-                    ch_ID = stoi(event_block[i][5]);                    
-                    // store the timing data
-                    counts[board][ch_ID] = stoi(event_block[i][6]);
+                    ch_ID = stoi(event_block[i][5]);  
+                    if(consistent_ind(board, ch_ID,N_boards)){
+                        // store the timing data
+                        counts[board][ch_ID] = stoi(event_block[i][6]);
+                    }
+                    else {
+                        cout << "Board ID" << board << " and ch. ID " << ch_ID << " are invalid."<< endl;
+                        cout << "File conversion failed." << endl;
+                        return;
+                    }                    
+
                 }
 
                 tr_data->Fill();
