@@ -4,11 +4,41 @@
 #include <sstream>
 #include <vector>
 #include <set>
+#include <argp.h>
 #include "TFile.h"
 #include "TTree.h"
 #include <TStopwatch.h>
 
 using namespace std;
+
+const char *argp_program_version = "converter 1.0";
+const char *argp_program_bug_address = "<carmen.selicato@cern.ch>";
+static char doc[] = "Code to convert a csv file written by the Janus software to a root file.";
+static char args_doc[] = "inputFile outputFile N_boards";
+
+struct arguments {
+  string inFile;
+  string outFile;
+  string N_boards;
+};
+
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = static_cast<struct arguments*>(state->input);
+    switch (key) {
+    case ARGP_KEY_ARG:
+      switch (state->arg_num) {
+        case 0: arguments->inFile = arg; break;
+        case 1: arguments->outFile = arg; break;
+        case 2: arguments->N_boards = arg; break;
+        default: return ARGP_ERR_UNKNOWN;
+      }
+      break;
+    default: return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static struct argp argp = { 0, parse_opt, args_doc, doc, 0, 0, 0 };
 
 vector<string> split_line(string line, char delimiter){
     vector<string> line_content={};
@@ -28,7 +58,7 @@ bool consistent_ind(int board,int ch,int N_boards){
 }
 
 
-void read_csv(const string& filepath, int N_boards){
+void read_csv(const string& filepath, const string& outfile, int N_boards){
 
     TStopwatch timer;
     timer.Start();
@@ -44,11 +74,15 @@ void read_csv(const string& filepath, int N_boards){
 
     string line;
     vector<vector<string>> data, metadata;
-    set<size_t> row_sizes;
+    set<size_t> row_sizes = {};
 
     // read file
     while (getline(file, line)){
         if (line.empty()==false){
+            // if present, remove CR
+            if (line.back() == '\r') {
+                line.pop_back();    }
+
             if (line[2] == '*'){
                 continue;        }
 
@@ -62,7 +96,7 @@ void read_csv(const string& filepath, int N_boards){
                 row_sizes.insert(row.size());
             }}
     } 
-    
+    cout << "Done reading file." << endl;
     // remove first row (it contains the names of the columns)
     data.erase(data.begin());
     // check consistency of the file (must have a constant number of columns.)
@@ -71,6 +105,7 @@ void read_csv(const string& filepath, int N_boards){
         cout << "No output file was created." << endl;
         return;
     }
+    else {cout << "The file has consistent columns, root file can be created." << endl;}
     
     // get metadata
     // (up to the acquisition mode all the files have the same format)
@@ -78,7 +113,6 @@ void read_csv(const string& filepath, int N_boards){
     TString file_format = metadata[1][1];
     TString janus_rel = metadata[2][1];
     TString acq_mode = metadata[3][1];
-    acq_mode.Resize(acq_mode.Sizeof()-2);
     Int_t run;
     UInt_t time_epoch;
     TString time_UTC;
@@ -127,12 +161,12 @@ void read_csv(const string& filepath, int N_boards){
         Int_t HG[N_boards][64];
         // initialize all values
         fill(&LG[0][0],&LG[0][0]+N_boards*64, masked);
-        fill(&HG[0][0],&LG[0][0]+N_boards*64, masked);
+        fill(&HG[0][0],&HG[0][0]+N_boards*64, masked);
 
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
         tr_data->Branch("data_type", &data_type);
-        tr_data->Branch("PHA_LG",&LG,Form("LG[%i][64]/I",N_boards));
-        tr_data->Branch("PHA_HG",&HG,Form("HG[%i][64]/I",N_boards));
+        tr_data->Branch("PHA_LG",&LG,Form("PHA_LG[%i][64]/I",N_boards));
+        tr_data->Branch("PHA_HG",&HG,Form("PHA_HG[%i][64]/I",N_boards));
 
         unsigned long long r;
         unsigned long long cur_tr_ID, pr_tr_ID;
@@ -214,8 +248,8 @@ void read_csv(const string& filepath, int N_boards){
 
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
         tr_data->Branch("data_type", &data_type);
-        tr_data->Branch("PHA_LG",&LG,Form("LG[%i][64]/I",N_boards));
-        tr_data->Branch("PHA_HG",&HG,Form("HG[%i][64]/I",N_boards));
+        tr_data->Branch("PHA_LG",&LG,Form("PHA_LG[%i][64]/I",N_boards));
+        tr_data->Branch("PHA_HG",&HG,Form("PHA_HG[%i][64]/I",N_boards));
         tr_data->Branch("ToA",&ToA, Form("ToA[%i][64]/D",N_boards));
         tr_data->Branch("ToT",&ToT, Form("ToT[%i][64]/D",N_boards));
 
@@ -402,7 +436,8 @@ void read_csv(const string& filepath, int N_boards){
 
 
     // write trees in the output file
-    string outpath = filepath.substr(0,filepath.size()-3)+"root";
+    // string outpath = filepath.substr(0,filepath.size()-3)+"root";
+    string outpath = outfile;
     TFile fout(outpath.c_str(), "recreate");
     tr_data->Write();
     tr_info->Write();
@@ -416,11 +451,12 @@ void read_csv(const string& filepath, int N_boards){
 
 }
 
-int main(){
-    string filepath;
-    cin >> filepath;
-    int N = 1;
-    read_csv(filepath, N);
+int main(int argc, char* argv[]){
 
-    return 1;
+    struct arguments arguments;
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+
+    read_csv(arguments.inFile,arguments.outFile, stoi(arguments.N_boards));
+
+    return 0;
 }
