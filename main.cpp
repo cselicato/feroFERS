@@ -146,7 +146,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
     tr_info->Branch("time_epoch", &time_epoch, "time_epoch/i");
     tr_info->Branch("time_UTC", &time_UTC);
 
-    tr_data->Branch("TStamp",&TStamp, "TStamp/D");
+    tr_data->Branch("TStamp_us",&TStamp, "TStamp_us/D");
     tr_data->Branch("Num_Hits",&hits, "Num_Hits/I");
 
 
@@ -157,13 +157,12 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
         run = stoi(metadata[5][1]);
         time_epoch = stoul(metadata[6][1]);
         time_UTC = metadata[7][1]+":"+metadata[7][2]+":"+metadata[7][3];        
-        ch_mask = data[1][4];
 
         tr_info->Branch("e_Nbins", &e_Nbins);
-        tr_info->Branch("ch_mask", &ch_mask);
         tr_info->Fill();
 
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
+        tr_data->Branch("ch_mask", &ch_mask);
         tr_data->Branch("data_type", &data_type);
         tr_data->Branch("PHA_LG",&LG,Form("PHA_LG[%i][64]/I",N_boards));
         tr_data->Branch("PHA_HG",&HG,Form("PHA_HG[%i][64]/I",N_boards));
@@ -181,6 +180,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
                 Trg_Id = pr_tr_ID;
                 TStamp = stold(data[r-1][0]);
                 hits = stoi(data[r-1][3]);
+                ch_mask = data[1][4];
                 data_type = data[r-1][6];
                 
                 fill(&LG[0][0],&LG[0][0]+N_boards*64, -2);
@@ -215,20 +215,25 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
         run = stoi(metadata[7][1]);
         time_epoch = stoul(metadata[8][1]);
         time_UTC = metadata[9][1]+":"+metadata[9][2]+":"+metadata[9][3];
-        ch_mask = data[1][4];
 
         tr_info->Branch("e_Nbins", &e_Nbins, "e_Nbins/I");
         tr_info->Branch("time_LSB", &time_LSB, "time_LSB/D");
         tr_info->Branch("time_unit", &time_unit);
-        tr_info->Branch("ch_mask", &ch_mask);
         tr_info->Fill();
 
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
+        tr_data->Branch("ch_mask", &ch_mask);
         tr_data->Branch("data_type", &data_type);
         tr_data->Branch("PHA_LG",&LG,Form("PHA_LG[%i][64]/I",N_boards));
         tr_data->Branch("PHA_HG",&HG,Form("PHA_HG[%i][64]/I",N_boards));
-        tr_data->Branch("ToA",&ToA, Form("ToA[%i][64]/D",N_boards));
-        tr_data->Branch("ToT",&ToT, Form("ToT[%i][64]/D",N_boards));
+        if (time_unit=="LSB"){
+            tr_data->Branch("ToA_LSB",&ToA, Form("ToA_LSB[%i][64]/D",N_boards));
+            tr_data->Branch("ToT_LSB",&ToT, Form("ToT_LSB[%i][64]/D",N_boards));
+        }
+        else {
+            tr_data->Branch("ToA_ns",&ToA, Form("ToA_ns[%i][64]/D",N_boards));
+            tr_data->Branch("ToT_ns",&ToT, Form("ToT_ns[%i][64]/D",N_boards));
+        }
 
         for (r=1; r<data.size(); r++){  // compare each row to the previous one
             cur_tr_ID = stoi(data[r][1]);
@@ -241,6 +246,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
                 vector<vector<string>> event_block(data.begin() + ev_start, end);
 
                 Trg_Id = pr_tr_ID;
+                ch_mask = data[1][4];
                 TStamp = stold(data[r-1][0]);
                 hits = stoi(data[r-1][3]);
                 data_type = data[r-1][6];
@@ -286,9 +292,15 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
         tr_info->Fill();
 
         // create branches to store the recorded data
+        if (time_unit=="LSB"){
+            tr_data->Branch("ToA_LSB",&ToA, Form("ToA_LSB[%i][64]/D",N_boards));
+            tr_data->Branch("ToT_LSB",&ToT, Form("ToT_LSB[%i][64]/D",N_boards));
+        }
+        else {
+            tr_data->Branch("ToA_ns",&ToA, Form("ToA_ns[%i][64]/D",N_boards));
+            tr_data->Branch("ToT_ns",&ToT, Form("ToT_ns[%i][64]/D",N_boards));
+        }       
         tr_data->Branch("data_type", &data_type);
-        tr_data->Branch("ToA",&ToA, Form("ToA[%i][64]/D",N_boards));
-        tr_data->Branch("ToT",&ToT, Form("ToT[%i][64]/D",N_boards));
 
         for (r=1; r<data.size(); r++){  // compare each row to the previous one
             cur_tr_T = stold(data[r][0]);
@@ -332,13 +344,12 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
         run = stoi(metadata[4][1]);
         time_epoch = stoul(metadata[5][1]);
         time_UTC = metadata[6][1]+":"+metadata[6][2]+":"+metadata[6][3];  
-        ch_mask = data[1][4];
 
-        tr_info->Branch("ch_mask", &ch_mask);
         tr_info->Fill();
 
         // create branches to store the recorded data
         tr_data->Branch("Trg_Id",&Trg_Id, "Trg_Id/I");
+        tr_data->Branch("ch_mask", &ch_mask);
         tr_data->Branch("counts",&counts, Form("counts[%i][64]/I",N_boards));
 
         for (r=1; r<data.size(); r++){  // compare each row to the previous one
@@ -354,6 +365,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
 
                 Trg_Id = pr_tr_ID;
                 TStamp = stold(data[r-1][0]);
+                ch_mask = data[1][4];
                 hits = stoi(data[r-1][3]);
 
                 fill(&counts[0][0],&counts[0][0]+N_boards*64, -2);
