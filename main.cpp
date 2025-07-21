@@ -23,7 +23,7 @@ static struct argp_option options[] = {
 
 struct arguments {
   string inFile;
-  int N_boards;  
+  int N_boards=0;  
   string outFile;
 };
 
@@ -40,6 +40,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         default: return ARGP_ERR_UNKNOWN;
       }
       break;
+    case ARGP_KEY_END:
+        if (arguments->inFile.empty() || arguments->N_boards == 0){
+            argp_failure(state, 1, 0, "Missing input file or number of boards. See --help for more information.");
+            exit(ARGP_ERR_UNKNOWN);
+        }    
     default: return ARGP_ERR_UNKNOWN;
     }
     return 0;
@@ -217,7 +222,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
         time_UTC = metadata[9][1]+":"+metadata[9][2]+":"+metadata[9][3];
 
         tr_info->Branch("e_Nbins", &e_Nbins, "e_Nbins/I");
-        tr_info->Branch("time_LSB", &time_LSB, "time_LSB/D");
+        tr_info->Branch("time_LSB_ns", &time_LSB, "time_LSB_ns/D");
         tr_info->Branch("time_unit", &time_unit);
         tr_info->Fill();
 
@@ -286,7 +291,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
         time_epoch = stoul(metadata[6][1]);
         time_UTC = metadata[8][1]+":"+metadata[8][2]+":"+metadata[8][3];  
         // create branches for the info tree and fill it with the metadata
-        tr_info->Branch("time_LSB", &time_LSB, "time_LSB/D");
+        tr_info->Branch("time_LSB_ns", &time_LSB, "time_LSB_ns/D");
         tr_info->Branch("time_unit", &time_unit);
 
         tr_info->Fill();
@@ -415,6 +420,8 @@ int main(int argc, char* argv[]){
         cout << "No output file provided. Using default: " << arguments.outFile << endl;
         cout << endl;
     }
+
+    cout << "Numero di board: "<<arguments.N_boards<<endl;
 
     convert_csv(arguments.inFile,arguments.outFile, arguments.N_boards);
 
