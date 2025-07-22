@@ -63,7 +63,8 @@ vector<string> split_line(string line, char delimiter){
     return line_content;
 }
 
-bool valid_ind(int board,int ch,int N_boards){
+// is-valid-ind
+bool is_valid_ind(int board,int ch,int N_boards){
     if((board<N_boards)&&(ch<64)){
         return true;    }
     else {
@@ -71,6 +72,76 @@ bool valid_ind(int board,int ch,int N_boards){
         cout << "File conversion failed." << endl;
         return false;
     }
+}
+
+
+
+vector<vector<string>> get_csv_metadata(fstream &file){
+    vector<vector<string>> metadata;
+    string line;
+    file.clear();
+    file.seekg(0);
+    while (getline(file, line)){
+        if (line.empty()==false){
+            // if present, remove CR
+            if (line.back() == '\r') {
+                line.pop_back();    }
+
+            if (line[2] == '*'){
+                continue;        }
+
+            else if (line[0] == '/'){
+                vector<string> row = split_line(line, ':');
+                metadata.push_back(row);
+            }
+            else {       
+                break;
+            }}
+    } 
+
+    return metadata;
+}
+
+vector<vector<string>> get_csv_data(fstream &file){
+    file.clear();
+    file.seekg(0);
+    vector<vector<string>> data;
+    string line;
+    set<size_t> row_sizes = {};
+
+    // read file
+    while (getline(file, line)){
+        if (line.empty()==false){
+            // if present, remove CR
+            if (line.back() == '\r') {
+                line.pop_back();    }
+
+            if (line[2] == '*' || line[0] == '/'){
+                continue;        }
+
+            else {       
+                vector<string> row = split_line(line, ',');
+                data.push_back(row);
+                row_sizes.insert(row.size());
+            }}
+    } 
+    
+    data.erase(data.begin());   // remove column names
+    
+    return data;
+}
+
+bool is_consistent(vector<vector<string>>& data){
+    string line;
+    set<size_t> row_sizes = {};
+
+    for (vector<string> row : data){
+        row_sizes.insert(row.size());
+    }
+
+    if (row_sizes.size() == 1){return true; }
+    else {return false; }
+
 }
 
 
@@ -88,42 +159,18 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
     }
     cout << "Opened file: " << infile << endl;
 
-    string line;
-    vector<vector<string>> data, metadata;
-    set<size_t> row_sizes = {};
+    vector<vector<string>> metadata = get_csv_metadata(file);
+    vector<vector<string>> data = get_csv_data(file);
 
-    // read file
-    while (getline(file, line)){
-        if (line.empty()==false){
-            // if present, remove CR
-            if (line.back() == '\r') {
-                line.pop_back();    }
-
-            if (line[2] == '*'){
-                continue;        }
-
-            else if (line[0] == '/'){
-                vector<string> row = split_line(line, ':');
-                metadata.push_back(row);
-            }
-            else {       
-                vector<string> row = split_line(line, ',');
-                data.push_back(row);
-                row_sizes.insert(row.size());
-            }}
-    } 
     cout << "Done reading file." << endl;
-    
-    data.erase(data.begin());   // remove column names
-    // check consistency of the file (must have a constant number of columns.)
-    if (row_sizes.size() != 1){
+
+    if (is_consistent(data)){
+        cout << "The file has consistent columns, root file can be created." << endl;   }
+    else {
         cout << "The file " << infile <<" has inconsistent columns." << endl;
         cout << "No output file was created." << endl;
-        return;
-    }
-    else {cout << "The file has consistent columns, root file can be created." << endl;}
-    
-    int n_cols = data[0].size();
+        return;    }
+
     // get metadata
     int board_mod = stoi(metadata[0][1]);
     TString file_format = metadata[1][1];
@@ -153,7 +200,6 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
 
     tr_data->Branch("TStamp_us",&TStamp, "TStamp_us/D");
     tr_data->Branch("Num_Hits",&hits, "Num_Hits/I");
-
 
     if (acq_mode.CompareTo("Spectroscopy")==0){
         cout << "Acquisition mode: Spectroscopy." << endl;
@@ -196,7 +242,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
                     pha_lg= stoi(event_block[i][7]); 
                     pha_hg= stoi(event_block[i][8]); 
                     board= stoi(event_block[i][2]);
-                    if(!valid_ind(board, ch_ID,N_boards)){
+                    if(!is_valid_ind(board, ch_ID,N_boards)){
                         return; }
                     LG[board][ch_ID] = pha_lg;
                     HG[board][ch_ID] = pha_hg;
@@ -264,7 +310,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
                 for (int i=0; i<event_block.size(); i++){
                     board= stoi(event_block[i][2]);
                     ch_ID = stoi(event_block[i][5]);     
-                    if(!valid_ind(board, ch_ID,N_boards)){
+                    if(!is_valid_ind(board, ch_ID,N_boards)){
                         return; }                      
                     LG[board][ch_ID] = stoi(event_block[i][7]);
                     HG[board][ch_ID] = stoi(event_block[i][8]);
@@ -327,7 +373,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
                 for (int i=0; i<event_block.size(); i++){
                     board= stoi(event_block[i][1]);
                     ch_ID = stoi(event_block[i][3]);                    
-                    if(!valid_ind(board, ch_ID,N_boards)){
+                    if(!is_valid_ind(board, ch_ID,N_boards)){
                         return; }
                     ToA[board][ch_ID] = stoi(event_block[i][5]);
                     ToT[board][ch_ID] = stoi(event_block[i][6]);
@@ -378,7 +424,7 @@ void convert_csv(const string& infile, const string& outfile, int N_boards){
                 for (int i=0; i<event_block.size(); i++){
                     board= stoi(event_block[i][2]);
                     ch_ID = stoi(event_block[i][5]);  
-                    if(!valid_ind(board, ch_ID,N_boards)){
+                    if(!is_valid_ind(board, ch_ID,N_boards)){
                         return; }
                     counts[board][ch_ID] = stoi(event_block[i][6]);
                 }
