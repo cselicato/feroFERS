@@ -151,19 +151,19 @@ vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long lon
     return event_block;
 }
 
-enum class StringCode {
+enum class modes {
     Spectroscopy,
     Spect_Timing,
     Timing,
     Counting
 };
 
-StringCode hashString(const TString& str) {
-    if (str == "Spectroscopy") return StringCode::Spectroscopy;
-    if (str == "Spect_Timing")  return StringCode::Spect_Timing;
-    if (str == "Timing_CStart")  return StringCode::Timing;
-    if (str == "Timing_CStop")  return StringCode::Timing;
-    if (str == "Counting")  return StringCode::Counting;
+modes hashString(const TString& str) {
+    if (str == "Spectroscopy") return modes::Spectroscopy;
+    if (str == "Spect_Timing")  return modes::Spect_Timing;
+    if (str == "Timing_CStart")  return modes::Timing;
+    if (str == "Timing_CStop")  return modes::Timing;
+    if (str == "Counting")  return modes::Counting;
 
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
@@ -192,7 +192,7 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode){
     t->Branch("time_UTC", &time_UTC);
 
     switch (hashString(mode)) {
-        case StringCode::Spectroscopy:
+        case modes::Spectroscopy:
             e_Nbins = stoi(metadata[4][1]);
             run = stoi(metadata[5][1]);
             time_epoch = stoul(metadata[6][1]);
@@ -202,7 +202,7 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode){
             t->Fill();
             break;
 
-        case StringCode::Spect_Timing:
+        case modes::Spect_Timing:
             e_Nbins = stoi(metadata[4][1]);
             time_LSB = stod(metadata[5][1]);
             time_unit = metadata[6][1];
@@ -215,7 +215,8 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode){
             t->Branch("time_unit", &time_unit);
             t->Fill();
             break;
-        case StringCode::Timing:
+
+        case modes::Timing:
             time_LSB = stod(metadata[4][1]);
             time_unit = metadata[5][1];
             run = stoi(metadata[6][1]);
@@ -226,7 +227,8 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode){
             t->Branch("time_unit", &time_unit);
             t->Fill();
             break;
-        case StringCode::Counting:
+
+        case modes::Counting:
             run = stoi(metadata[4][1]);
             time_epoch = stoul(metadata[5][1]);
             time_UTC = metadata[6][1]+":"+metadata[6][2]+":"+metadata[6][3];  
@@ -253,7 +255,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, int N_
     t->Branch("Num_Hits",&hits, "Num_Hits/I");
 
     switch (hashString(mode)) {
-        case StringCode::Spectroscopy:
+        case modes::Spectroscopy:
             cout << "Acquisition mode: Spectroscopy." << endl;
 
             t->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
@@ -296,7 +298,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, int N_
             break;
 
         
-        case StringCode::Spect_Timing:
+        case modes::Spect_Timing:
             cout << "Acquisition mode: Spect_Timing." << endl;
 
             t->Branch("Trg_Id",&Trg_Id, "Trg_Id/l");
@@ -348,7 +350,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, int N_
             break;
 
 
-        case StringCode::Timing:
+        case modes::Timing:
             // the acquistion modes Timing_CStart and Timing_CStop have the same structure
             cout << "The acquisition mode is "<<mode<<"." << endl;
 
@@ -393,7 +395,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, int N_
             break;
 
 
-        case StringCode::Counting:
+        case modes::Counting:
             cout << "The acquisition mode is Counting." << endl;
 
             // create branches to store the recorded data
@@ -460,13 +462,11 @@ int main(int argc, char* argv[]){
 
     cout << "Done reading file." << endl;
 
-    try
-    {
+    try {
         is_consistent(data);
         cout << "The file has consistent columns."<<endl;
     }
-    catch(const exception& e)
-    {
+    catch(const exception& e){
         cerr << e.what() << '\n';
         return 1;
     }
@@ -474,18 +474,14 @@ int main(int argc, char* argv[]){
 
     TString acq_mode = metadata[3][1];   
     TTree *tr_data, *tr_info;   
-    try
-    {
+    try {
         tr_data = make_data_tree(data,acq_mode, arguments.N_boards);
         tr_info = make_info_tree(metadata,acq_mode);
-
     }
-    catch(const exception& e)
-    {
+    catch(const exception& e){
         cerr << e.what() << '\n';
         return 1;
     }
-     
 
     // write trees in the output file
     TFile fout(arguments.outFile.c_str(), "recreate");
@@ -500,6 +496,7 @@ int main(int argc, char* argv[]){
     cout << endl;
     cout << "Real time: " << timer.RealTime() << " seconds\n";
     cout << "CPU time: " << timer.CpuTime() << " seconds\n";
+    cout << endl;
 
     return 0;
 }
