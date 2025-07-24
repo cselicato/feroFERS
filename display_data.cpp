@@ -36,7 +36,7 @@ int display_data(){
     string inFile;
     cin >> inFile;
     
-    bool masked = true;
+    bool masked = false;
 
     TFile * file = new TFile(inFile.c_str(), "read");
     if (!file || file->IsZombie()) {
@@ -50,6 +50,7 @@ int display_data(){
     tree_info->GetEntry(0);
     cout << "METADATA:" << endl;
     TPavesText *paves = new TPavesText(0.0085,0.88,0.35,0.98,1,"NDC");
+    paves->AddText(inFile.c_str());
     for (auto* b : * tree_info->GetListOfBranches()){
         TLeaf * leaf = tree_info->GetLeaf(b->GetName());
         string t_name = leaf->GetTypeName();
