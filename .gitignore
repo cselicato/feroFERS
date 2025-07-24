@@ -56,3 +56,5 @@ dkms.conf
 *.root
 
 test_files/*
+
+.vscode
