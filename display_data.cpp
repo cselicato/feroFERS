@@ -36,7 +36,9 @@ int display_data(){
     string inFile;
     cin >> inFile;
     
-    bool masked = false;
+    // bool masked = false;
+    bool masked;
+    vector<int> channels = {};
 
     TFile * file = new TFile(inFile.c_str(), "read");
     if (!file || file->IsZombie()) {
@@ -71,7 +73,6 @@ int display_data(){
     cout << endl;
 
     TTree * tree_data = (TTree*)file->Get("datas");
-    // tree_data->Print();
     int N = tree_data->GetEntriesFast();
     int n_b = tree_data->GetNbranches();
     TH1F * h[n_b];
@@ -86,8 +87,8 @@ int display_data(){
         
         if (t_name == "TString"){
             continue;        }
-        vector<float> b_content = {};
 
+        vector<float> b_content = {};
 
         for (int i=0;i<N;i++){
             tree_data->GetEntry(i);
@@ -97,10 +98,20 @@ int display_data(){
                 b_content.push_back(val);
             }
             else {
-                for (int j=0;j<len;j++){
+                if(!channels.empty()){
+                int N_boards = len/64;
+                for (int i=0;i<N_boards;i++){
+                    for (int ch : channels){
+                    auto val = leaf->GetValue(i*64+ch);
+                    b_content.push_back(val);
+                    }
+                }}
+
+                else {
+                    for (int j=0;j<len;j++){
                     auto val = leaf->GetValue(j);
                     b_content.push_back(val);
-                }
+                }}
             }
         }
 

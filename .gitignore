@@ -58,3 +58,4 @@ dkms.conf
 test_files/*
 
 .vscode
+main
