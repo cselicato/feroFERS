@@ -8,12 +8,8 @@
 #include "TTree.h"
 #include "TH1F.h"
 #include "TCanvas.h"
-#include "TH2D.h"
 #include "TTreeReader.h"
-#include "TTreeReaderArray.h"
-#include "TText.h"
 #include "TPavesText.h"
-#include "TFrame.h"
 #include "TPaveStats.h"
 
 using namespace std;
@@ -24,7 +20,7 @@ TH1F * make_hist(const string& name, int n_bins, vector<float> vec, bool mask){
     TH1F *h = new TH1F(name.c_str(), name.c_str(),n_bins, start-stop*0.02, stop+stop*0.02);
     for (auto x : vec){
         if (mask){
-            if (x>0){h->Fill(x); } 
+            if (x!=-1 && x!=-2){h->Fill(x); } 
         }
         else {h->Fill(x); }
         }
@@ -36,9 +32,10 @@ int display_data(){
     string inFile;
     cin >> inFile;
     
-    // bool masked = false;
     bool masked;
-    vector<int> channels = {};
+    cin >> masked;
+
+    vector<int> channels = {0};
 
     TFile * file = new TFile(inFile.c_str(), "read");
     if (!file || file->IsZombie()) {
@@ -52,7 +49,6 @@ int display_data(){
     tree_info->GetEntry(0);
     cout << "METADATA:" << endl;
     TPavesText *paves = new TPavesText(0.0085,0.88,0.35,0.98,1,"NDC");
-    paves->AddText(inFile.c_str());
     for (auto* b : * tree_info->GetListOfBranches()){
         TLeaf * leaf = tree_info->GetLeaf(b->GetName());
         string t_name = leaf->GetTypeName();
@@ -61,7 +57,8 @@ int display_data(){
         if (t_name == "TString"){
             TString* str_val = (TString*)leaf->GetValuePointer();
             cout << b->GetName() <<": "<< *str_val << endl;
-            if (b_name=="time_UTC"){
+
+            if (b_name=="time_UTC"||b_name=="acq_mode"){
                 paves->AddText(*str_val);   }
         }
         else {
@@ -115,7 +112,7 @@ int display_data(){
             }
         }
 
-        h[b_count] = make_hist(b->GetName(), 60, b_content,masked);
+        h[b_count] = make_hist(b->GetName(), 100, b_content,masked);
         // draw the histogram only if it has entries
         if (h[b_count]->GetEntries()>0){
             c[b_count] = new TCanvas(b->GetName(),b->GetName());
