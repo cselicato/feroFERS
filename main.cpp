@@ -74,6 +74,8 @@ int main(int argc, char* argv[]){
         cout << endl;
     }
 
+    stored_vars v(arguments.N_boards);
+
     fstream file;
     file.open(arguments.inFile, ios::in);
 
@@ -101,8 +103,8 @@ int main(int argc, char* argv[]){
     TString acq_mode = metadata[3][1];   
     TTree *tr_data, *tr_info;   
     try {
-        tr_data = make_data_tree(data,acq_mode, arguments.N_boards);
-        tr_info = make_info_tree(metadata,acq_mode);
+        tr_data = make_data_tree(data,acq_mode, v);
+        tr_info = make_info_tree(metadata,acq_mode, v);
     }
     catch(const exception& e){
         cerr << e.what() << '\n';
