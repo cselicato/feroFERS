@@ -18,7 +18,7 @@ vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long lon
 }
 
 
-modes hashString(const TString& str) {
+modes find_mode(const TString& str) {
     if (str == "Spectroscopy") return modes::Spectroscopy;
     if (str == "Spect_Timing")  return modes::Spect_Timing;
     if (str == "Timing_CStart")  return modes::Timing;
@@ -28,6 +28,14 @@ modes hashString(const TString& str) {
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
 
+modes find_mode(uint8_t acq_mode) {
+    if ((acq_mode & 0x1) && !(acq_mode & 0x2)) return modes::Spectroscopy;
+    if ((acq_mode & 0x2) && !(acq_mode & 0x1))  return modes::Timing;
+    if ((acq_mode & 0x3)  && (acq_mode & 0x2))  return modes::Spect_Timing;
+    if (acq_mode & 0x4)  return modes::Counting;
+
+    else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
+}
 
 
 // COSE NUOVE
@@ -49,7 +57,7 @@ TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v){
     t->Branch("time_epoch", &v.time_epoch, "time_epoch/i");
     t->Branch("time_UTC", &v.time_UTC);
 
-    switch (hashString(mode)) {
+    switch (find_mode(mode)) {
         case modes::Spectroscopy:
             t->Branch("e_Nbins", &v.e_Nbins);
             break;
@@ -74,11 +82,12 @@ TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v){
 
 TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
     int N_boards = v.get_N_boards();
+    int max_hits = v.get_max_hits();
 
     t->Branch("TStamp_us",&v.TStamp, "TStamp_us/D");
     t->Branch("Num_Hits",&v.hits, "Num_Hits/I");
 
-    switch (hashString(mode)) {
+    switch (find_mode(mode)) {
         case modes::Spectroscopy:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask);
@@ -149,7 +158,7 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, st
     v.acq_mode = metadata[3][1];
 
 
-    switch (hashString(mode)) {
+    switch (find_mode(mode)) {
         case modes::Spectroscopy:
             v.e_Nbins = stoi(metadata[4][1]);
             v.run = stoi(metadata[5][1]);
@@ -202,7 +211,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
     Double_t cur_tr_T, pr_tr_T;
     unsigned long long r, cur_tr_ID, pr_tr_ID, ev_start = 0;    
 
-    switch (hashString(mode)) {
+    switch (find_mode(mode)) {
         case modes::Spectroscopy:
             cout << "Acquisition mode: Spectroscopy." << endl;
 
