@@ -1,5 +1,6 @@
 #include "modes_helpers.hpp"
 #include "csv_parser.hpp"
+#include "bin_parser.hpp"
 
 using namespace std;
 
@@ -65,6 +66,8 @@ int main(int argc, char* argv[]){
     TStopwatch timer;
     timer.Start();
 
+    int max_hits = 100;
+
     struct arguments arguments;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
@@ -74,7 +77,7 @@ int main(int argc, char* argv[]){
         cout << endl;
     }
 
-    stored_vars v(arguments.N_boards);
+    stored_vars v(arguments.N_boards, max_hits);
 
     fstream file;
     file.open(arguments.inFile, ios::in);
