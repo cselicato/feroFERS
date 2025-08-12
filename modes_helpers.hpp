@@ -18,7 +18,8 @@ enum class modes {
     Counting
 };
 
-struct stored_vars
+// class to contain all the variables stored in the TTree
+class stored_vars
 {
     public:
     int N_boards;
@@ -80,6 +81,22 @@ struct stored_vars
     int get_N_boards() const {return N_boards;}
     int get_max_hits() const {return max_hits;}
 
+};
+
+
+// class for the variables used in the parsing of the .dat files
+// (that are not already in classes)
+class read_vars
+{
+    public:
+    uint16_t LG;
+    uint16_t HG;
+    float ToA_ns;
+    float ToT_ns;
+    uint32_t ToA_LSB;
+    uint16_t ToT_LSB;
+    uint8_t ch_ID;
+    uint64_t counts;
 };
 
 

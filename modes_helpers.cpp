@@ -37,14 +37,48 @@ modes find_mode(uint8_t acq_mode) {
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
 
-
-// COSE NUOVE
-// -------------------------------------------------------------------------------
-
-// per fillare?
-// for (int i = 0; i < N_boards; ++i) {
-    // std::fill(LG[i], LG[i] + 64, -2);
+// int64_t** reset(int64_t** c, stored_vars v){
+//     for (int i = 0; i < v.get_N_boards(); i++) {
+//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+//                 c[i][j] = (int64_t)0.;
+//             }
+//         }
+//     }
+//     return c;
 // }
+// int64_t*** reset(int64_t*** c, stored_vars v){
+//     for (int i = 0; i < v.get_N_boards(); i++) {
+//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+//             for (int k=0; k<v.get_max_hits(); k++){
+//                 c[i][j][k] = (int64_t)0.;
+//             }
+//         }
+//     }
+//     return c;
+// }
+template<typename T>
+T** reset(T** c, stored_vars& v){
+    for (int i = 0; i < v.get_N_boards(); i++) {
+        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+            c[i][j] = (T)0;
+        }
+    }
+    return c;
+}
+
+template<typename T>
+T*** reset(T*** c, stored_vars& v){
+    for (int i = 0; i < v.get_N_boards(); i++) {
+        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+            for (int k=0; k<v.get_max_hits(); k++){
+                c[i][j][k] = (T)0;
+            }
+        }
+    }
+    return c;
+}
+
+
 
 
 TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v){
@@ -142,11 +176,6 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
 }
 
 
-// -------------------------------------------------------------------------------
-// FINE COSE NUOVE
-
-
-
 TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, stored_vars &v){
     TTree *t = new TTree("info","info");
     make_branches_info(t, mode, v);
@@ -226,6 +255,8 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
                     v.ch_mask = data[1][4];
                     v.data_type = data[r-1][6];
 
+                    // reset<Int_t>(v.LG, v);
+                    // reset<Int_t>(v.HG, v);
                     for (int i = 0; i < N_boards; ++i) {fill(v.LG[i], v.LG[i] + 64, -2);}
                     for (int i = 0; i < N_boards; ++i) {fill(v.HG[i], v.HG[i] + 64, -2);}
 
