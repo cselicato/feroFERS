@@ -60,7 +60,7 @@ template<typename T>
 T** reset(T** c, stored_vars& v){
     for (int i = 0; i < v.get_N_boards(); i++) {
         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-            c[i][j] = (T)0;
+            c[i][j] = static_cast<T>(-2);
         }
     }
     return c;
@@ -71,7 +71,7 @@ T*** reset(T*** c, stored_vars& v){
     for (int i = 0; i < v.get_N_boards(); i++) {
         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
             for (int k=0; k<v.get_max_hits(); k++){
-                c[i][j][k] = (T)0;
+                c[i][j][k] = static_cast<T>(-2);
             }
         }
     }
@@ -126,8 +126,8 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask);
             t->Branch("data_type", &v.data_type);
-            t->Branch("PHA_LG",&v.LG,Form("PHA_LG[%i][64]/I",N_boards));
-            t->Branch("PHA_HG",&v.HG,Form("PHA_HG[%i][64]/I",N_boards));
+            t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
+            t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
 
             break;
 
@@ -136,15 +136,15 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask);
             t->Branch("data_type", &v.data_type);
-            t->Branch("PHA_LG",&v.LG,Form("PHA_LG[%i][64]/I",N_boards));
-            t->Branch("PHA_HG",&v.HG,Form("PHA_HG[%i][64]/I",N_boards));
+            t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
+            t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
             if (v.time_unit=="LSB"){
-                t->Branch("ToA_LSB",&v.ToA, Form("ToA_LSB[%i][64]/D",N_boards));
-                t->Branch("ToT_LSB",&v.ToT, Form("ToT_LSB[%i][64]/D",N_boards));
+                t->Branch("ToA_LSB",*v.ToA, Form("ToA_LSB[%i][64]/D",N_boards));
+                t->Branch("ToT_LSB",*v.ToT, Form("ToT_LSB[%i][64]/D",N_boards));
             }
             else {
-                t->Branch("ToA_ns",&v.ToA, Form("ToA_ns[%i][64]/D",N_boards));
-                t->Branch("ToT_ns",&v.ToT, Form("ToT_ns[%i][64]/D",N_boards));
+                t->Branch("ToA_ns",*v.ToA, Form("ToA_ns[%i][64]/D",N_boards));
+                t->Branch("ToT_ns",*v.ToT, Form("ToT_ns[%i][64]/D",N_boards));
             }
 
             break;
@@ -152,12 +152,12 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
 
         case modes::Timing:
             if (v.time_unit=="LSB"){
-                t->Branch("ToA_LSB",&v.ToA, Form("ToA_LSB[%i][64]/D",N_boards));
-                t->Branch("ToT_LSB",&v.ToT, Form("ToT_LSB[%i][64]/D",N_boards));
+                t->Branch("ToA_LSB",*v.ToA, Form("ToA_LSB[%i][64]/D",N_boards));
+                t->Branch("ToT_LSB",*v.ToT, Form("ToT_LSB[%i][64]/D",N_boards));
             }
             else {
-                t->Branch("ToA_ns",&v.ToA, Form("ToA_ns[%i][64]/D",N_boards));
-                t->Branch("ToT_ns",&v.ToT, Form("ToT_ns[%i][64]/D",N_boards));
+                t->Branch("ToA_ns",*v.ToA, Form("ToA_ns[%i][64]/D",N_boards));
+                t->Branch("ToT_ns",*v.ToT, Form("ToT_ns[%i][64]/D",N_boards));
             }       
             t->Branch("data_type", &v.data_type);
 
@@ -167,7 +167,7 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
         case modes::Counting:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/I");
             t->Branch("ch_mask", &v.ch_mask);
-            t->Branch("counts",&v.counts, Form("counts[%i][64]/I",N_boards));
+            t->Branch("counts",*v.counts, Form("counts[%i][64]/I",N_boards));
 
             break;
 
@@ -255,10 +255,10 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
                     v.ch_mask = data[1][4];
                     v.data_type = data[r-1][6];
 
-                    // reset<Int_t>(v.LG, v);
-                    // reset<Int_t>(v.HG, v);
-                    for (int i = 0; i < N_boards; ++i) {fill(v.LG[i], v.LG[i] + 64, -2);}
-                    for (int i = 0; i < N_boards; ++i) {fill(v.HG[i], v.HG[i] + 64, -2);}
+                    reset<Int_t>(v.LG, v);
+                    reset<Int_t>(v.HG, v);
+                    // for (int i = 0; i < N_boards; i++) {fill(v.LG[i], v.LG[i] + 64, -2);}
+                    // for (int i = 0; i < N_boards; i++) {fill(v.HG[i], v.HG[i] + 64, -2);}
 
                     for (long unsigned int i=0; i<event_block.size(); i++){
                         ch_ID = stoi(event_block[i][5]);
