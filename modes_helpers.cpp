@@ -37,25 +37,6 @@ modes find_mode(uint8_t acq_mode) {
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
 
-// int64_t** reset(int64_t** c, stored_vars v){
-//     for (int i = 0; i < v.get_N_boards(); i++) {
-//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-//                 c[i][j] = (int64_t)0.;
-//             }
-//         }
-//     }
-//     return c;
-// }
-// int64_t*** reset(int64_t*** c, stored_vars v){
-//     for (int i = 0; i < v.get_N_boards(); i++) {
-//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-//             for (int k=0; k<v.get_max_hits(); k++){
-//                 c[i][j][k] = (int64_t)0.;
-//             }
-//         }
-//     }
-//     return c;
-// }
 template<typename T>
 T** reset(T** c, stored_vars& v){
     for (int i = 0; i < v.get_N_boards(); i++) {
@@ -257,8 +238,6 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
 
                     reset<Int_t>(v.LG, v);
                     reset<Int_t>(v.HG, v);
-                    // for (int i = 0; i < N_boards; i++) {fill(v.LG[i], v.LG[i] + 64, -2);}
-                    // for (int i = 0; i < N_boards; i++) {fill(v.HG[i], v.HG[i] + 64, -2);}
 
                     for (long unsigned int i=0; i<event_block.size(); i++){
                         ch_ID = stoi(event_block[i][5]);
@@ -295,10 +274,10 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
                     v.hits = stoi(data[r-1][3]);
                     v.data_type = data[r-1][6];
 
-                    for (int i = 0; i < N_boards; ++i) {fill(v.LG[i], v.LG[i] + 64, -2);}
-                    for (int i = 0; i < N_boards; ++i) {fill(v.HG[i], v.HG[i] + 64, -2);}
-                    for (int i = 0; i < N_boards; ++i) {fill(v.ToA[i], v.ToA[i] + 64, -2);}
-                    for (int i = 0; i < N_boards; ++i) {fill(v.ToT[i], v.ToT[i] + 64, -2);}
+                    reset<Int_t>(v.LG, v);
+                    reset<Int_t>(v.HG, v);                    
+                    reset<Double_t>(v.ToA, v);
+                    reset<Double_t>(v.ToT, v);
 
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][2]);
@@ -331,9 +310,9 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
                     v.TStamp = stold(data[r-1][0]);
                     v.hits = stoi(data[r-1][2]);
                     v.data_type = data[r-1][4];
-                
-                    for (int i = 0; i < N_boards; ++i) {fill(v.ToA[i], v.ToA[i] + 64, -2);}
-                    for (int i = 0; i < N_boards; ++i) {fill(v.ToT[i], v.ToT[i] + 64, -2);}
+
+                    reset<Double_t>(v.ToA, v);
+                    reset<Double_t>(v.ToT, v);
 
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][1]);
@@ -366,7 +345,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
                     v.ch_mask = data[1][4];
                     v.hits = stoi(data[r-1][3]);
 
-                    for (int i = 0; i < N_boards; ++i) {fill(v.counts[i], v.counts[i] + 64, -2);}
+                    reset<Int_t>(v.counts, v);
 
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][2]);
