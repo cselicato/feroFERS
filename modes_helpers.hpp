@@ -42,6 +42,7 @@ class stored_vars
     Double_t TStamp;
 
     Int_t** LG;
+    // Int_t* LG;
     Int_t** HG;
     Int_t** counts;
     Double_t** ToA;
@@ -104,6 +105,8 @@ void is_valid_ind(int board,int ch,int N_boards);
 vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long& r, unsigned long long& ev_start);
 modes find_mode(const TString& str);
 modes find_mode(uint8_t acq_mode);
+template<typename T> T** reset(T** c, stored_vars& v);
+template<typename T> T*** reset(T*** c, stored_vars& v);
 TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v);
 TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v);
 TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, stored_vars &v);
