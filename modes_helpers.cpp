@@ -59,26 +59,23 @@ T*** reset(T*** c, stored_vars& v){
     return c;
 }
 
-
-
-
 TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v){
     // create common branches
-    t->Branch("board_mod", &v.board_mod);
+    t->Branch("board_mod", &v.board_mod, "board_mod/s");
     t->Branch("file_format", &v.file_format);
     t->Branch("janus_rel", &v.janus_rel);
     t->Branch("acq_mode", &v.acq_mode);
-    t->Branch("run", &v.run, "run/I");
-    t->Branch("time_epoch", &v.time_epoch, "time_epoch/i");
+    t->Branch("run", &v.run, "run/s");
+    t->Branch("time_epoch", &v.time_epoch, "time_epoch/l");
     t->Branch("time_UTC", &v.time_UTC);
 
     switch (find_mode(mode)) {
         case modes::Spectroscopy:
-            t->Branch("e_Nbins", &v.e_Nbins);
+            t->Branch("e_Nbins", &v.e_Nbins, "e_Nbins/s");
             break;
 
         case modes::Spect_Timing:
-            t->Branch("e_Nbins", &v.e_Nbins, "e_Nbins/I");
+            t->Branch("e_Nbins", &v.e_Nbins, "e_Nbins/s");
             t->Branch("time_LSB_ns", &v.time_LSB, "time_LSB_ns/D");
             t->Branch("time_unit", &v.time_unit);
             break;
@@ -105,8 +102,8 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
     switch (find_mode(mode)) {
         case modes::Spectroscopy:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
-            t->Branch("ch_mask", &v.ch_mask);
-            t->Branch("data_type", &v.data_type);
+            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
+            t->Branch("data_type", &v.data_type, "data_type/b");
             t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
             t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
 
@@ -115,40 +112,28 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
         
         case modes::Spect_Timing:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
-            t->Branch("ch_mask", &v.ch_mask);
-            t->Branch("data_type", &v.data_type);
+            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
+            t->Branch("data_type", &v.data_type, "data_type/b");
             t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
             t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
-            if (v.time_unit=="LSB"){
-                t->Branch("ToA_LSB",*v.ToA, Form("ToA_LSB[%i][64]/D",N_boards));
-                t->Branch("ToT_LSB",*v.ToT, Form("ToT_LSB[%i][64]/D",N_boards));
-            }
-            else {
-                t->Branch("ToA_ns",*v.ToA, Form("ToA_ns[%i][64]/D",N_boards));
-                t->Branch("ToT_ns",*v.ToT, Form("ToT_ns[%i][64]/D",N_boards));
-            }
+            t->Branch("ToA_LSB",*v.ToA, Form("ToA_LSB[%i][64]/L",N_boards));
+            t->Branch("ToT_LSB",*v.ToT, Form("ToT_LSB[%i][64]/I",N_boards));
 
             break;
 
 
         case modes::Timing:
-            if (v.time_unit=="LSB"){
-                t->Branch("ToA_LSB",*v.ToA, Form("ToA_LSB[%i][64]/D",N_boards));
-                t->Branch("ToT_LSB",*v.ToT, Form("ToT_LSB[%i][64]/D",N_boards));
-            }
-            else {
-                t->Branch("ToA_ns",*v.ToA, Form("ToA_ns[%i][64]/D",N_boards));
-                t->Branch("ToT_ns",*v.ToT, Form("ToT_ns[%i][64]/D",N_boards));
-            }       
-            t->Branch("data_type", &v.data_type);
+            t->Branch("ToA",*v.ToA, Form("ToA[%i][64]/F",N_boards));
+            t->Branch("ToT",*v.ToT, Form("ToT[%i][64]/F",N_boards));
+            t->Branch("data_type", &v.data_type, "data_type/b");
 
             break;
 
 
         case modes::Counting:
-            t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/I");
-            t->Branch("ch_mask", &v.ch_mask);
-            t->Branch("counts",*v.counts, Form("counts[%i][64]/I",N_boards));
+            t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
+            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
+            t->Branch("counts",*v.counts, Form("counts[%i][64]/L",N_boards));
 
             break;
 
@@ -233,8 +218,8 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
                     v.Trg_Id = pr_tr_ID;
                     v.TStamp = stold(data[r-1][0]);
                     v.hits = stoi(data[r-1][3]);
-                    v.ch_mask = data[1][4];
-                    v.data_type = data[r-1][6];
+                    v.ch_mask = stoull(data[1][4], nullptr, 16);
+                    v.data_type = stoi(data[r-1][6], nullptr, 16);
 
                     reset<Int_t>(v.LG, v);
                     reset<Int_t>(v.HG, v);
@@ -269,24 +254,25 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
                     vector<vector<string>> event_block = get_event(data, r, ev_start);
 
                     v.Trg_Id = pr_tr_ID;
-                    v.ch_mask = data[1][4];
+                    v.ch_mask = stoull(data[1][4], nullptr, 16);
                     v.TStamp = stold(data[r-1][0]);
                     v.hits = stoi(data[r-1][3]);
-                    v.data_type = data[r-1][6];
+                    v.data_type = stoi(data[r-1][6], nullptr, 16);
 
                     reset<Int_t>(v.LG, v);
-                    reset<Int_t>(v.HG, v);                    
-                    reset<Double_t>(v.ToA, v);
-                    reset<Double_t>(v.ToT, v);
-
+                    reset<Int_t>(v.HG, v);
+                    reset<float>(v.ToA, v);
+                    reset<float>(v.ToT, v);
+                    
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][2]);
                         ch_ID = stoi(event_block[i][5]);     
                         is_valid_ind(board, ch_ID,N_boards);                      
                         v.LG[board][ch_ID] = stoi(event_block[i][7]);
                         v.HG[board][ch_ID] = stoi(event_block[i][8]);
-                        v.ToA[board][ch_ID] = (Double_t)stod(event_block[i][9]);
-                        v.ToT[board][ch_ID] = (Double_t)stod(event_block[i][10]);
+                        v.ToA[board][ch_ID] = stof(event_block[i][9]);
+                        v.ToT[board][ch_ID] = stof(event_block[i][10]);
+                        
                     }
 
                     t->Fill();
@@ -309,17 +295,19 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
 
                     v.TStamp = stold(data[r-1][0]);
                     v.hits = stoi(data[r-1][2]);
-                    v.data_type = data[r-1][4];
+                    v.data_type = stoi(data[r-1][4], nullptr, 16);
 
-                    reset<Double_t>(v.ToA, v);
-                    reset<Double_t>(v.ToT, v);
+                    reset<float>(v.ToA, v);
+                    reset<float>(v.ToT, v);
 
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][1]);
                         ch_ID = stoi(event_block[i][3]);                    
                         is_valid_ind(board, ch_ID,N_boards);
-                        v.ToA[board][ch_ID] = stoi(event_block[i][5]);
-                        v.ToT[board][ch_ID] = stoi(event_block[i][6]);
+                        v.ToA[board][ch_ID] = stof(event_block[i][5]);    
+                        v.ToT[board][ch_ID] = stof(event_block[i][6]);   
+                        // v.ToA[board][ch_ID] = stoi(event_block[i][5]);
+                        // v.ToT[board][ch_ID] = stoi(event_block[i][6]);
 
                     }
 
@@ -342,10 +330,10 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
 
                     v.Trg_Id = pr_tr_ID;
                     v.TStamp = stold(data[r-1][0]);
-                    v.ch_mask = data[1][4];
+                    v.ch_mask = stoull(data[1][4], nullptr, 16);
                     v.hits = stoi(data[r-1][3]);
 
-                    reset<Int_t>(v.counts, v);
+                    reset<int64_t>(v.counts, v);
 
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][2]);
