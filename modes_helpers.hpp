@@ -25,55 +25,57 @@ class stored_vars
     int N_boards;
     int max_hits;
     // metadata
-    int board_mod;
+    uint16_t board_mod;
     TString file_format;
     TString janus_rel;
     TString acq_mode;
-    Int_t run;
-    Int_t e_Nbins;
-    UInt_t time_epoch;
+    uint8_t bin_acq_mode;
+    uint16_t run;
+    uint16_t e_Nbins;
+    uint64_t time_epoch;
     Double_t time_LSB;
     TString time_UTC;
     TString time_unit;
     // data
     Int_t hits;
-    unsigned long long Trg_Id;
-    TString data_type, ch_mask;
+    uint64_t Trg_Id;
+    uint8_t data_type;
+    uint64_t ch_mask;
     Double_t TStamp;
 
-    Int_t** LG;
-    // Int_t* LG;
-    Int_t** HG;
-    Int_t** counts;
-    Double_t** ToA;
-    Double_t** ToT;
-
-    Double_t*** ToT_timing;
-    Double_t*** ToA_timing;
+    // only the 2D and 3D variables need to have a different type than the one read in the binary file
+    int32_t** LG;
+    int32_t** HG;
+    int64_t** counts; // warning: (in principle) there could be loss of data...
+    float** ToA;         // does float need to change too?
+    float** ToT;
+    float*** ToA_timing;
+    float*** ToT_timing;
     
     stored_vars(int N_boards_, int max_hits_): N_boards(N_boards_), max_hits(max_hits_)
     {
-        LG = new Int_t*[N_boards];
-        HG = new Int_t*[N_boards];
-        counts = new Int_t*[N_boards];
-        ToA = new Double_t*[N_boards];
-        ToT = new Double_t*[N_boards];
-        ToT_timing = new Double_t**[N_boards];
-        ToA_timing = new Double_t**[N_boards];
-
+        LG = new int32_t*[N_boards];
+        HG = new int32_t*[N_boards];
+        counts = new int64_t*[N_boards];
+        ToA = new float*[N_boards];
+        ToT = new float*[N_boards];
+        ToA_timing = new float**[N_boards];
+        ToT_timing = new float**[N_boards];
+        
         for (int i = 0; i < N_boards; i++) {
-            LG[i] = new Int_t[64];
-            HG[i] = new Int_t[64];
-            counts[i] = new Int_t[64];
-            ToA[i] = new Double_t[64];
-            ToT[i] = new Double_t[64];
+            LG[i] = new int32_t[64];
+            HG[i] = new int32_t[64];
+            counts[i] = new int64_t[64];
+            ToA[i] = new float[64];
+            ToT[i] = new float[64];
 
-            ToT_timing[i] = new Double_t*[64];
-            ToA_timing[i] = new Double_t*[64];
+            ToA_timing[i] = new float*[64];
+            ToT_timing[i] = new float*[64];
 
             for (int j = 0; j < 64; j++) {
-                ToT_timing[i][j] = new Double_t[max_hits];
-                ToA_timing[i][j] = new Double_t[max_hits];
+                ToA_timing[i][j] = new float[max_hits];
+                ToT_timing[i][j] = new float[max_hits];
+
             }
         }
 
@@ -83,6 +85,7 @@ class stored_vars
     int get_max_hits() const {return max_hits;}
 
 };
+
 
 
 // class for the variables used in the parsing of the .dat files
