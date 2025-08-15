@@ -49,7 +49,7 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
         return 1;
     }
     // find file size and go back to the beginning
-    streampos file_size = file.tellg();
+    Int_t file_size = file.tellg();
     file.seekg(0, ios::beg);
 
     FHEADER fh;
@@ -84,12 +84,16 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
                 
                 int hits = 0;
+                reset<int16_t>(v.data_type, v);
                 reset<int32_t>(v.LG, v);
                 reset<int32_t>(v.HG, v);
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
+
+                    v.data_type[eh.board_Id][event.ch_ID] = event.data_type;
+
                     if(event.data_type&0x1){ // LG amplitude saved
                         file.read(reinterpret_cast<char*>(&r.LG), sizeof(r.LG));
                         v.LG[eh.board_Id][event.ch_ID] = r.LG;
@@ -101,7 +105,6 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                     hits++;
                 }
                 fill_data_var(eh, v);
-                v.data_type = event.data_type; // FIX
                 v.hits = hits;
 
                 tr_data->Fill();
@@ -118,6 +121,7 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 file.read(reinterpret_cast<char*>(&t_eh), sizeof(T_EHEADER));
 
                 int hits = 0; 
+                reset<int16_t>(v.data_type, v);
                 // reset<float>(v.ToT_timing, v);
                 // reset<float>(v.ToA_timing, v);
                 reset<float>(v.ToT, v);
@@ -126,8 +130,8 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 // READ EVENT DATA
                 while (file.tellg()<(t_eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
-                    reset<float>(v.ToT_timing, v);
-                    reset<float>(v.ToA_timing, v);
+
+                    v.data_type[eh.board_Id][event.ch_ID] = event.data_type;
 
                     // !! FIX BUG (multiple hits per channel)
                     if(fh.time_unit&0x1){ // times are saved as ns
@@ -160,7 +164,6 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 }
 
                 v.TStamp = t_eh.TStamp;
-                v.data_type = event.data_type; // FIX
                 v.hits = hits;
 
                 tr_data->Fill();
@@ -172,8 +175,9 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 ev_start = file.tellg();
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
-                
+
                 int hits = 0;
+                reset<int16_t>(v.data_type, v);
                 reset<int32_t>(v.LG, v);
                 reset<int32_t>(v.HG, v);
                 reset<float>(v.ToT_timing, v);
@@ -185,6 +189,7 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
 
+                    v.data_type[eh.board_Id][event.ch_ID] = event.data_type;
                        
                     // PHA information
                     if(event.data_type&0x1){ // LG amplitude saved
@@ -202,8 +207,6 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                             file.read(reinterpret_cast<char*>(&r.ToA_ns), sizeof(float));
                             // v.ToA_timing[eh.board_Id][event.ch_ID][0] = (float)r.ToA_ns;
                             v.ToA[eh.board_Id][event.ch_ID] = (float)r.ToA_ns;
-                            cout << to_string(r.ToA_ns) << endl;
-                            cout << to_string(v.ToA[eh.board_Id][event.ch_ID]) << endl;
 
                         }
                         if(event.data_type&0x20){ // ToT saved
@@ -224,11 +227,9 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                             v.ToT[eh.board_Id][event.ch_ID] = (float)r.ToT_LSB;
                         }
                     }
-
                     hits++;
                 }
                 fill_data_var(eh, v);
-                v.data_type = event.data_type; // FIX
                 v.hits = hits;
 
                 tr_data->Fill();
@@ -242,6 +243,8 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
                 // READ EVENT DATA
                 int hits = 0;
+                reset<int64_t>(v.counts, v);
+
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&r.ch_ID), sizeof(uint8_t));
                     file.read(reinterpret_cast<char*>(&r.counts), sizeof(uint64_t));

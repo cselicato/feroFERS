@@ -41,8 +41,9 @@ class stored_vars
     uint64_t ch_mask;     
     Int_t hits;
 
-    uint8_t data_type;
+    
     // only the 2D and 3D variables need to have a different type than the one read in the binary file
+    int16_t** data_type;
     int32_t** LG;
     int32_t** HG;
     int64_t** counts; // warning: (in principle) there could be loss of data...
@@ -53,6 +54,7 @@ class stored_vars
     
     stored_vars(int N_boards_, int max_hits_): N_boards(N_boards_), max_hits(max_hits_)
     {
+        data_type = new int16_t*[N_boards];
         LG = new int32_t*[N_boards];
         HG = new int32_t*[N_boards];
         counts = new int64_t*[N_boards];
@@ -62,6 +64,7 @@ class stored_vars
         ToT_timing = new float**[N_boards];
         
         for (int i = 0; i < N_boards; i++) {
+            data_type[i] = new int16_t[64];
             LG[i] = new int32_t[64];
             HG[i] = new int32_t[64];
             counts[i] = new int64_t[64];

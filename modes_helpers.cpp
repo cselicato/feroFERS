@@ -103,7 +103,7 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
         case modes::Spectroscopy:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
-            t->Branch("data_type", &v.data_type, "data_type/b");
+            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",N_boards));
             t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
             t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
 
@@ -113,7 +113,7 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
         case modes::Spect_Timing:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
-            t->Branch("data_type", &v.data_type, "data_type/b");
+            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",N_boards));
             t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
             t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
             t->Branch("ToA",*v.ToA, Form("ToA[%i][64]/F",N_boards));
@@ -125,7 +125,7 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
         case modes::Timing:
             t->Branch("ToA",*v.ToA, Form("ToA[%i][64]/F",N_boards));
             t->Branch("ToT",*v.ToT, Form("ToT[%i][64]/F",N_boards));
-            t->Branch("data_type", &v.data_type, "data_type/b");
+            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",N_boards));
 
             break;
 
@@ -202,7 +202,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
     make_branches_data(t, mode, v);
     int N_boards = v.get_N_boards();
 
-    Int_t ch_ID, pha_lg, pha_hg, board;
+    Int_t ch_ID, board;
     Double_t cur_tr_T, pr_tr_T;
     unsigned long long r, cur_tr_ID, pr_tr_ID, ev_start = 0;    
 
@@ -219,21 +219,20 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
                     v.TStamp = stold(data[r-1][0]);
                     v.hits = stoi(data[r-1][3]);
                     v.ch_mask = stoull(data[1][4], nullptr, 16);
-                    v.data_type = stoi(data[r-1][6], nullptr, 16);
 
+                    reset<int16_t>(v.data_type, v);
                     reset<Int_t>(v.LG, v);
                     reset<Int_t>(v.HG, v);
-
+                    
                     for (long unsigned int i=0; i<event_block.size(); i++){
                         ch_ID = stoi(event_block[i][5]);
-                        pha_lg= stoi(event_block[i][7]); 
-                        pha_hg= stoi(event_block[i][8]); 
                         board= stoi(event_block[i][2]);
 
                         is_valid_ind(board, ch_ID,N_boards);
 
-                        v.LG[board][ch_ID] = pha_lg;
-                        v.HG[board][ch_ID] = pha_hg;
+                        v.data_type[board][ch_ID] = stoi(event_block[i][6], nullptr, 16);
+                        v.LG[board][ch_ID] = stoi(event_block[i][7]);
+                        v.HG[board][ch_ID] = stoi(event_block[i][8]);
                     }
 
                     t->Fill();
@@ -257,8 +256,8 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
                     v.ch_mask = stoull(data[1][4], nullptr, 16);
                     v.TStamp = stold(data[r-1][0]);
                     v.hits = stoi(data[r-1][3]);
-                    v.data_type = stoi(data[r-1][6], nullptr, 16);
 
+                    reset<int16_t>(v.data_type, v);
                     reset<Int_t>(v.LG, v);
                     reset<Int_t>(v.HG, v);
                     reset<float>(v.ToA, v);
@@ -266,8 +265,11 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
                     
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][2]);
-                        ch_ID = stoi(event_block[i][5]);     
-                        is_valid_ind(board, ch_ID,N_boards);                      
+                        ch_ID = stoi(event_block[i][5]); 
+
+                        is_valid_ind(board, ch_ID,N_boards);      
+                        
+                        v.data_type[board][ch_ID] = stoi(event_block[i][6], nullptr, 16);
                         v.LG[board][ch_ID] = stoi(event_block[i][7]);
                         v.HG[board][ch_ID] = stoi(event_block[i][8]);
                         v.ToA[board][ch_ID] = stof(event_block[i][9]);
@@ -295,19 +297,20 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
                     v.TStamp = stold(data[r-1][0]);
                     v.hits = stoi(data[r-1][2]);
-                    v.data_type = stoi(data[r-1][4], nullptr, 16);
 
+                    reset<int16_t>(v.data_type, v);
                     reset<float>(v.ToA, v);
                     reset<float>(v.ToT, v);
 
                     for (int i=0; i<event_block.size(); i++){
                         board= stoi(event_block[i][1]);
-                        ch_ID = stoi(event_block[i][3]);                    
+                        ch_ID = stoi(event_block[i][3]);     
+
                         is_valid_ind(board, ch_ID,N_boards);
+
+                        v.data_type[board][ch_ID] = stoi(event_block[i][4], nullptr, 16);
                         v.ToA[board][ch_ID] = stof(event_block[i][5]);    
                         v.ToT[board][ch_ID] = stof(event_block[i][6]);   
-                        // v.ToA[board][ch_ID] = stoi(event_block[i][5]);
-                        // v.ToT[board][ch_ID] = stoi(event_block[i][6]);
 
                     }
 
