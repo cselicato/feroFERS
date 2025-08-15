@@ -71,6 +71,12 @@ int main(int argc, char* argv[]){
     struct arguments arguments;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
+    if (arguments.inFile.substr(arguments.inFile.size()-4)!=".root") {
+        cout << "Output file " << arguments.outFile << " is invalid: it must be a .root file." << endl;
+        cout << endl;
+        return 1;
+    }
+
     if (arguments.outFile.empty()) {
         arguments.outFile = arguments.inFile.substr(0,arguments.inFile.size()-3)+"root";
         cout << "No output file provided. Using default: " << arguments.outFile << endl;
@@ -106,8 +112,8 @@ int main(int argc, char* argv[]){
     TString acq_mode = metadata[3][1];   
     TTree *tr_data, *tr_info;   
     try {
-        tr_data = make_data_tree(data,acq_mode, v);
-        tr_info = make_info_tree(metadata,acq_mode, v);
+        tr_data = make_data_tree(data,find_mode(acq_mode), v);
+        tr_info = make_info_tree(metadata,find_mode(acq_mode), v);
     }
     catch(const exception& e){
         cerr << e.what() << '\n';

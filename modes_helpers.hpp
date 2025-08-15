@@ -29,20 +29,19 @@ class stored_vars
     TString file_format;
     TString janus_rel;
     TString acq_mode;
-    uint8_t bin_acq_mode;
     uint16_t run;
     uint16_t e_Nbins;
     uint64_t time_epoch;
-    Double_t time_LSB;
+    Double_t time_conv;
     TString time_UTC;
     TString time_unit;
     // data
+    Double_t TStamp;    
+    uint64_t Trg_Id;   
+    uint64_t ch_mask;     
     Int_t hits;
-    uint64_t Trg_Id;
-    uint8_t data_type;
-    uint64_t ch_mask;
-    Double_t TStamp;
 
+    uint8_t data_type;
     // only the 2D and 3D variables need to have a different type than the one read in the binary file
     int32_t** LG;
     int32_t** HG;
@@ -103,15 +102,35 @@ class read_vars
     uint64_t counts;
 };
 
+template<typename T>
+T** reset(T** c, stored_vars& v){
+    for (int i = 0; i < v.get_N_boards(); i++) {
+        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+            c[i][j] = static_cast<T>(-2);
+        }
+    }
+    return c;
+}
 
+template<typename T>
+T*** reset(T*** c, stored_vars& v){
+    for (int i = 0; i < v.get_N_boards(); i++) {
+        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+            for (int k=0; k<v.get_max_hits(); k++){
+                c[i][j][k] = static_cast<T>(-2);
+            }
+        }
+    }
+    return c;
+}
 void is_valid_ind(int board,int ch,int N_boards);
 vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long& r, unsigned long long& ev_start);
 modes find_mode(const TString& str);
 modes find_mode(uint8_t acq_mode);
-template<typename T> T** reset(T** c, stored_vars& v);
-template<typename T> T*** reset(T*** c, stored_vars& v);
-TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v);
-TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v);
-TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, stored_vars &v);
-TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored_vars &v);
+// template<typename T> T** reset(T** c, stored_vars& v);
+// template<typename T> T*** reset(T*** c, stored_vars& v);
+TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v);
+TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v);
+TTree * make_info_tree(vector<vector<string>>& metadata, const modes& mode, stored_vars &v);
+TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_vars &v);
 

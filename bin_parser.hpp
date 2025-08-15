@@ -12,75 +12,6 @@
 
 using namespace std;
 
-
-class stored_vars_b
-{
-    public:
-    int N_boards;
-    int max_hits;
-    // metadata
-    uint16_t board_mod;
-    TString file_format;
-    TString janus_rel;
-    uint8_t acq_mode;
-    uint16_t run;
-    uint16_t e_Nbins;
-    uint64_t time_epoch;
-    Double_t time_LSB;
-    TString time_UTC;
-    uint8_t time_unit;
-    // data
-    Int_t hits;
-    uint64_t Trg_Id;
-    uint8_t data_type;
-    uint64_t ch_mask;
-    Double_t TStamp;
-
-    // only the 2D and 3D variables need to have a different type than the one read in the binary file
-    int32_t** LG;
-    int32_t** HG;
-    int64_t** counts; // warning: there could be loss of data...
-    variant<float, uint64_t>** ToA;         // does float need to change too?
-    variant<float, uint32_t>** ToT;
-    variant<float, uint64_t>*** ToA_timing;
-    variant<float, uint32_t>*** ToT_timing;
-    
-    stored_vars_b(int N_boards_, int max_hits_): N_boards(N_boards_), max_hits(max_hits_)
-    {
-        LG = new int32_t*[N_boards];
-        HG = new int32_t*[N_boards];
-        counts = new int64_t*[N_boards];
-        ToA = new variant<float, uint64_t>*[N_boards];
-        ToT = new variant<float, uint32_t>*[N_boards];
-        ToA_timing = new variant<float, uint64_t>**[N_boards];
-        ToT_timing = new variant<float, uint32_t>**[N_boards];
-        
-        for (int i = 0; i < N_boards; i++) {
-            LG[i] = new int32_t[64];
-            HG[i] = new int32_t[64];
-            counts[i] = new int64_t[64];
-            ToA[i] = new variant<float, uint64_t>[64];
-            ToT[i] = new variant<float, uint32_t>[64];
-
-            ToA_timing[i] = new variant<float, uint64_t>*[64];
-            ToT_timing[i] = new variant<float, uint32_t>*[64];
-
-            for (int j = 0; j < 64; j++) {
-                ToA_timing[i][j] = new variant<float, uint64_t>[max_hits];
-                ToT_timing[i][j] = new variant<float, uint32_t>[max_hits];
-
-            }
-        }
-
-    }
-
-
-    int get_N_boards() const {return N_boards;}
-    int get_max_hits() const {return max_hits;}
-
-};
-
-
 /**
  * Class for the file header in binary format
  * (it has the same format for every acquisition mode)
@@ -107,9 +38,9 @@ public:
 class EHEADER {
     public:
     uint16_t ev_size;        // int 16 bit
-    uint8_t board_ID;       // int 8 bit
+    uint8_t board_Id;       // int 8 bit
     double TStamp;          // double 64 
-    uint64_t trig_ID;        // int 64 bit
+    uint64_t Trg_Id;        // int 64 bit
     uint64_t ch_mask;        // int 64 bit
 
     int get_mask_hits() const {
