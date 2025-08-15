@@ -70,4 +70,4 @@ class EDATA {
 };
 #pragma pack(pop)
 
-int get_bin_data(string inFile);
+int get_bin_data(string inFile, string outFile, stored_vars &v);

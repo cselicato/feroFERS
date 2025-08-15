@@ -71,7 +71,7 @@ int main(int argc, char* argv[]){
     struct arguments arguments;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-    if (arguments.inFile.substr(arguments.inFile.size()-4)!=".root") {
+    if (!arguments.outFile.empty() && arguments.outFile.substr(arguments.inFile.size()-5)!=".root") {
         cout << "Output file " << arguments.outFile << " is invalid: it must be a .root file." << endl;
         cout << endl;
         return 1;
@@ -84,6 +84,14 @@ int main(int argc, char* argv[]){
     }
 
     stored_vars v(arguments.N_boards, max_hits);
+
+    // process binary files
+    if (arguments.inFile.substr(arguments.inFile.size()-4)==".dat") {
+        cout << "Input file is a binary file." << endl;
+        get_bin_data(arguments.inFile, arguments.outFile, v);
+        cout << endl;
+        return 0;
+    }
 
     fstream file;
     file.open(arguments.inFile, ios::in);
