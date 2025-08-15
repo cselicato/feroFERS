@@ -1,5 +1,7 @@
-#include "bin_parser.hpp"
 #include "modes_helpers.hpp"
+#include "bin_parser.hpp"
+
+#include "csv_parser.hpp"
 
 
 void fill_info_var(FHEADER &fh, stored_vars &v){
@@ -39,7 +41,7 @@ void fill_data_var(EHEADER &eh, stored_vars &v){
     v.ch_mask = eh.ch_mask; 
 }
 
-int get_bin_data(string inFile){
+int get_bin_data(string inFile, string outFile, stored_vars &v){
     // open file
     fstream file(inFile, ios::in|ios::binary|ios::ate);
     if (!file) {
@@ -54,7 +56,6 @@ int get_bin_data(string inFile){
     EHEADER eh;
     T_EHEADER t_eh;
     EDATA event;
-    stored_vars v(1,100);
     read_vars r;
 
     // start reading file
@@ -257,7 +258,7 @@ int get_bin_data(string inFile){
         }
 
 
-    TFile fout("bin_first.root", "recreate");
+    TFile fout(outFile.c_str(), "recreate");
     tr_data->Write();
     tr_info->Write();
     // close file
@@ -265,9 +266,3 @@ int get_bin_data(string inFile){
 
     return 0;
 };
-
-int main(){
-    get_bin_data("test_files/counting/Run36_list.dat");
-
-    return 0;
-}
