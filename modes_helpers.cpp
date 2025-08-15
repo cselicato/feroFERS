@@ -37,29 +37,29 @@ modes find_mode(uint8_t acq_mode) {
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
 
-template<typename T>
-T** reset(T** c, stored_vars& v){
-    for (int i = 0; i < v.get_N_boards(); i++) {
-        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-            c[i][j] = static_cast<T>(-2);
-        }
-    }
-    return c;
-}
+// template<typename T>
+// T** reset(T** c, stored_vars& v){
+//     for (int i = 0; i < v.get_N_boards(); i++) {
+//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+//             c[i][j] = static_cast<T>(-2);
+//         }
+//     }
+//     return c;
+// }
 
-template<typename T>
-T*** reset(T*** c, stored_vars& v){
-    for (int i = 0; i < v.get_N_boards(); i++) {
-        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-            for (int k=0; k<v.get_max_hits(); k++){
-                c[i][j][k] = static_cast<T>(-2);
-            }
-        }
-    }
-    return c;
-}
+// template<typename T>
+// T*** reset(T*** c, stored_vars& v){
+//     for (int i = 0; i < v.get_N_boards(); i++) {
+//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+//             for (int k=0; k<v.get_max_hits(); k++){
+//                 c[i][j][k] = static_cast<T>(-2);
+//             }
+//         }
+//     }
+//     return c;
+// }
 
-TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v){
+TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v){
     // create common branches
     t->Branch("board_mod", &v.board_mod, "board_mod/s");
     t->Branch("file_format", &v.file_format);
@@ -69,19 +69,19 @@ TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v){
     t->Branch("time_epoch", &v.time_epoch, "time_epoch/l");
     t->Branch("time_UTC", &v.time_UTC);
 
-    switch (find_mode(mode)) {
+    switch (mode) {
         case modes::Spectroscopy:
             t->Branch("e_Nbins", &v.e_Nbins, "e_Nbins/s");
             break;
 
         case modes::Spect_Timing:
             t->Branch("e_Nbins", &v.e_Nbins, "e_Nbins/s");
-            t->Branch("time_LSB_ns", &v.time_LSB, "time_LSB_ns/D");
+            t->Branch("time_LSB_ns", &v.time_conv, "time_LSB_ns/D");
             t->Branch("time_unit", &v.time_unit);
             break;
 
         case modes::Timing:
-            t->Branch("time_LSB_ns", &v.time_LSB, "time_LSB_ns/D");
+            t->Branch("time_LSB_ns", &v.time_conv, "time_LSB_ns/D");
             t->Branch("time_unit", &v.time_unit);
             break;
 
@@ -92,14 +92,14 @@ TTree * make_branches_info(TTree * t, const TString& mode, stored_vars &v){
     return t;
 }
 
-TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
+TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
     int N_boards = v.get_N_boards();
     int max_hits = v.get_max_hits();
 
     t->Branch("TStamp_us",&v.TStamp, "TStamp_us/D");
     t->Branch("Num_Hits",&v.hits, "Num_Hits/I");
 
-    switch (find_mode(mode)) {
+    switch (mode) {
         case modes::Spectroscopy:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
@@ -116,8 +116,8 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
             t->Branch("data_type", &v.data_type, "data_type/b");
             t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
             t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
-            t->Branch("ToA_LSB",*v.ToA, Form("ToA_LSB[%i][64]/L",N_boards));
-            t->Branch("ToT_LSB",*v.ToT, Form("ToT_LSB[%i][64]/I",N_boards));
+            t->Branch("ToA",*v.ToA, Form("ToA[%i][64]/F",N_boards));
+            t->Branch("ToT",*v.ToT, Form("ToT[%i][64]/F",N_boards));
 
             break;
 
@@ -142,7 +142,7 @@ TTree * make_branches_data(TTree * t, const TString& mode, stored_vars &v){
 }
 
 
-TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, stored_vars &v){
+TTree * make_info_tree(vector<vector<string>>& metadata, const modes& mode, stored_vars &v){
     TTree *t = new TTree("info","info");
     make_branches_info(t, mode, v);
 
@@ -153,7 +153,7 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, st
     v.acq_mode = metadata[3][1];
 
 
-    switch (find_mode(mode)) {
+    switch (mode) {
         case modes::Spectroscopy:
             v.e_Nbins = stoi(metadata[4][1]);
             v.run = stoi(metadata[5][1]);
@@ -165,7 +165,7 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, st
 
         case modes::Spect_Timing:
             v.e_Nbins = stoi(metadata[4][1]);
-            v.time_LSB = stod(metadata[5][1]);
+            v.time_conv = stod(metadata[5][1]);
             v.time_unit = metadata[6][1];
             v.run = stoi(metadata[7][1]);
             v.time_epoch = stoul(metadata[8][1]);
@@ -175,7 +175,7 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, st
             break;
 
         case modes::Timing:
-            v.time_LSB = stod(metadata[4][1]);
+            v.time_conv = stod(metadata[4][1]);
             v.time_unit = metadata[5][1];
             v.run = stoi(metadata[6][1]);
             v.time_epoch = stoul(metadata[6][1]);
@@ -197,7 +197,7 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const TString& mode, st
 }
 
 
-TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored_vars &v){
+TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_vars &v){
     TTree *t = new TTree("datas","datas");
     make_branches_data(t, mode, v);
     int N_boards = v.get_N_boards();
@@ -206,7 +206,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
     Double_t cur_tr_T, pr_tr_T;
     unsigned long long r, cur_tr_ID, pr_tr_ID, ev_start = 0;    
 
-    switch (find_mode(mode)) {
+    switch (mode) {
         case modes::Spectroscopy:
             cout << "Acquisition mode: Spectroscopy." << endl;
 
@@ -285,7 +285,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const TString& mode, stored
 
         case modes::Timing:
             // the acquistion modes Timing_CStart and Timing_CStop have the same structure
-            cout << "The acquisition mode is "<<mode<<"." << endl;
+            cout << "The acquisition mode is Timing." << endl;
 
             for (r=1; r<data.size(); r++){  // compare each row to the previous one
                 cur_tr_T = stold(data[r][0]);
