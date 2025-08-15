@@ -71,18 +71,17 @@ int main(int argc, char* argv[]){
     struct arguments arguments;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-    if (!arguments.outFile.empty() && arguments.outFile.substr(arguments.inFile.size()-5)!=".root") {
-        cout << "Output file " << arguments.outFile << " is invalid: it must be a .root file." << endl;
-        cout << endl;
-        return 1;
-    }
-
     if (arguments.outFile.empty()) {
         arguments.outFile = arguments.inFile.substr(0,arguments.inFile.size()-3)+"root";
         cout << "No output file provided. Using default: " << arguments.outFile << endl;
         cout << endl;
     }
 
+    // if (arguments.outFile.substr(arguments.inFile.size()-5)!=".root") {
+    //     cout << "Output file " << arguments.outFile << " is invalid: it must be a .root file." << endl;
+    //     cout << endl;
+    //     return 1;
+    // }
     stored_vars v(arguments.N_boards, max_hits);
 
     // process binary files
