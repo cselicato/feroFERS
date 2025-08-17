@@ -62,6 +62,8 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
     // read file header (exactly the same for each acquisition mode)
     file.read(reinterpret_cast<char*>(&fh), sizeof(FHEADER));
     modes acq_mod = find_mode(fh.acq_mode);
+    if(fh.time_unit&0x1){v.time_unit = "ns";}
+    else {v.time_unit = "LSB";}
 
     // make trees 
     TTree *tr_info = new TTree("info","info");
@@ -112,9 +114,6 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
             break;
 
         case modes::Timing:
-            if(fh.time_unit&0x1){v.time_unit = "ns";}
-            else {v.time_unit = "LSB";}
-
             while(file.tellg()<file_size){
                 ev_start = file.tellg();
                 // READ EVENT HEADER

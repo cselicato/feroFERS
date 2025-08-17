@@ -109,7 +109,7 @@ template<typename T>
 T** reset(T** c, stored_vars& v){
     for (int i = 0; i < v.get_N_boards(); i++) {
         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-            c[i][j] = static_cast<T>(-2);
+            c[i][j] = static_cast<T>(-1);
         }
     }
     return c;
@@ -120,18 +120,17 @@ T*** reset(T*** c, stored_vars& v){
     for (int i = 0; i < v.get_N_boards(); i++) {
         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
             for (int k=0; k<v.get_max_hits(); k++){
-                c[i][j][k] = static_cast<T>(-2);
+                c[i][j][k] = static_cast<T>(-1);
             }
         }
     }
     return c;
 }
+
 void is_valid_ind(int board,int ch,int N_boards);
-vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long& r, unsigned long long& ev_start);
+vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long r, unsigned long long& ev_start);
 modes find_mode(const TString& str);
 modes find_mode(uint8_t acq_mode);
-// template<typename T> T** reset(T** c, stored_vars& v);
-// template<typename T> T*** reset(T*** c, stored_vars& v);
 TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v);
 TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v);
 TTree * make_info_tree(vector<vector<string>>& metadata, const modes& mode, stored_vars &v);
