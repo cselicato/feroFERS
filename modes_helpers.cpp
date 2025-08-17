@@ -7,7 +7,7 @@ void is_valid_ind(int board,int ch,int N_boards){
     }
 }
 
-vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long& r, unsigned long long& ev_start){
+vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long r, unsigned long long& ev_start){
     // an event is the collection of recorded data with the same trigger
     vector<vector<string>>::iterator end;
     if(r==data.size()-1){end = data.begin() + r + 1;    }
@@ -36,28 +36,6 @@ modes find_mode(uint8_t acq_mode) {
 
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
-
-// template<typename T>
-// T** reset(T** c, stored_vars& v){
-//     for (int i = 0; i < v.get_N_boards(); i++) {
-//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-//             c[i][j] = static_cast<T>(-2);
-//         }
-//     }
-//     return c;
-// }
-
-// template<typename T>
-// T*** reset(T*** c, stored_vars& v){
-//     for (int i = 0; i < v.get_N_boards(); i++) {
-//         for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-//             for (int k=0; k<v.get_max_hits(); k++){
-//                 c[i][j][k] = static_cast<T>(-2);
-//             }
-//         }
-//     }
-//     return c;
-// }
 
 TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v){
     // create common branches
@@ -208,150 +186,143 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
     switch (mode) {
         case modes::Spectroscopy:
+        {
             cout << "Acquisition mode: Spectroscopy." << endl;
 
-            for (r=1; r<data.size(); r++){  // compare each row to the previous one
-                cur_tr_ID = stoi(data[r][1]);
-                pr_tr_ID = stoi(data[r-1][1]);
-                if (cur_tr_ID!=pr_tr_ID || r==(data.size()-1)){
-                    vector<vector<string>> event_block = get_event(data, r, ev_start);
-                    v.Trg_Id = pr_tr_ID;
-                    v.TStamp = stold(data[r-1][0]);
-                    v.hits = stoi(data[r-1][3]);
-                    v.ch_mask = stoull(data[1][4], nullptr, 16);
+            Double_t time = 0;
+            reset<int16_t>(v.data_type, v);
+            reset<Int_t>(v.LG, v);
+            reset<Int_t>(v.HG, v);
 
+            for (vector<string> row : data){
+                v.Trg_Id = stoi(row[1]);
+                v.TStamp = stold(row[0]);
+                v.hits = stoi(row[3]);
+                v.ch_mask = stoull(row[4], nullptr, 16);
+                
+                ch_ID = stoi(row[5]);
+                board= stoi(row[2]);
+
+                is_valid_ind(board, ch_ID,N_boards);
+
+                v.data_type[board][ch_ID] = stoi(row[6], nullptr, 16);
+                v.LG[board][ch_ID] = stoi(row[7]);
+                v.HG[board][ch_ID] = stoi(row[8]);
+
+                if (v.TStamp != time){
+                    time = v.TStamp;
+                    t->Fill();
                     reset<int16_t>(v.data_type, v);
                     reset<Int_t>(v.LG, v);
                     reset<Int_t>(v.HG, v);
-                    
-                    for (long unsigned int i=0; i<event_block.size(); i++){
-                        ch_ID = stoi(event_block[i][5]);
-                        board= stoi(event_block[i][2]);
-
-                        is_valid_ind(board, ch_ID,N_boards);
-
-                        v.data_type[board][ch_ID] = stoi(event_block[i][6], nullptr, 16);
-                        v.LG[board][ch_ID] = stoi(event_block[i][7]);
-                        v.HG[board][ch_ID] = stoi(event_block[i][8]);
-                    }
-
-                    t->Fill();
-                    // assign value to the start index of the next event
-                    ev_start = r;
                 }
             }
             break;
-
+        }
         
         case modes::Spect_Timing:
+        {
             cout << "Acquisition mode: Spect_Timing." << endl;
 
-            for (r=1; r<data.size(); r++){  // compare each row to the previous one
-                cur_tr_ID = stoi(data[r][1]);
-                pr_tr_ID = stoi(data[r-1][1]);
-                if (cur_tr_ID!=pr_tr_ID || r==(data.size()-1)){
-                    vector<vector<string>> event_block = get_event(data, r, ev_start);
+            Double_t time = 0;
+            reset<int16_t>(v.data_type, v);
+            reset<Int_t>(v.LG, v);
+            reset<Int_t>(v.HG, v);
+            reset<float>(v.ToA, v);
+            reset<float>(v.ToT, v);
 
-                    v.Trg_Id = pr_tr_ID;
-                    v.ch_mask = stoull(data[1][4], nullptr, 16);
-                    v.TStamp = stold(data[r-1][0]);
-                    v.hits = stoi(data[r-1][3]);
+            for (vector<string> row : data){
+                v.Trg_Id = stoull(row[1]);
+                v.ch_mask = stoull(row[4], nullptr, 16);
+                v.TStamp = stold(row[0]);
+                v.hits = stoi(row[3]);
 
+                board= stoi(row[2]);
+                ch_ID = stoi(row[5]); 
+
+                is_valid_ind(board, ch_ID,N_boards);      
+                
+                v.data_type[board][ch_ID] = stoi(row[6], nullptr, 16);
+                v.LG[board][ch_ID] = stoi(row[7]);
+                v.HG[board][ch_ID] = stoi(row[8]);
+                v.ToA[board][ch_ID] = stof(row[9]);
+                v.ToT[board][ch_ID] = stof(row[10]);
+
+                if (v.TStamp != time){
+                    time = v.TStamp;
+                    t->Fill();
                     reset<int16_t>(v.data_type, v);
                     reset<Int_t>(v.LG, v);
                     reset<Int_t>(v.HG, v);
                     reset<float>(v.ToA, v);
                     reset<float>(v.ToT, v);
-                    
-                    for (int i=0; i<event_block.size(); i++){
-                        board= stoi(event_block[i][2]);
-                        ch_ID = stoi(event_block[i][5]); 
-
-                        is_valid_ind(board, ch_ID,N_boards);      
-                        
-                        v.data_type[board][ch_ID] = stoi(event_block[i][6], nullptr, 16);
-                        v.LG[board][ch_ID] = stoi(event_block[i][7]);
-                        v.HG[board][ch_ID] = stoi(event_block[i][8]);
-                        v.ToA[board][ch_ID] = stof(event_block[i][9]);
-                        v.ToT[board][ch_ID] = stof(event_block[i][10]);
-                        
-                    }
-
-                    t->Fill();
-                    // assign value to the start index of the next event
-                    ev_start = r;
                 }
             }
             break;
+        }
+
 
 
         case modes::Timing:
+        {
             // the acquistion modes Timing_CStart and Timing_CStop have the same structure
             cout << "The acquisition mode is Timing." << endl;
 
-            for (r=1; r<data.size(); r++){  // compare each row to the previous one
-                cur_tr_T = stold(data[r][0]);
-                pr_tr_T = stold(data[r-1][0]);
-                if (cur_tr_T!=pr_tr_T || r==(data.size()-1)){
-                    vector<vector<string>> event_block = get_event(data, r, ev_start);
+            Double_t time = 0;
+            reset<int16_t>(v.data_type, v);
+            reset<float>(v.ToA, v);
+            reset<float>(v.ToT, v);
 
-                    v.TStamp = stold(data[r-1][0]);
-                    v.hits = stoi(data[r-1][2]);
+            for (vector<string> row : data){
+                v.TStamp = stold(row[0]);
+                v.hits = stoi(row[2]);
 
+                board= stoi(row[1]);
+                ch_ID = stoi(row[3]);     
+
+                is_valid_ind(board, ch_ID,N_boards);
+
+                v.data_type[board][ch_ID] = stoi(row[4], nullptr, 16);
+                v.ToA[board][ch_ID] = stof(row[5]);    
+                v.ToT[board][ch_ID] = stof(row[6]);   
+
+                if (v.TStamp != time){
+                    time = v.TStamp;
+                    t->Fill();
                     reset<int16_t>(v.data_type, v);
                     reset<float>(v.ToA, v);
                     reset<float>(v.ToT, v);
-
-                    for (int i=0; i<event_block.size(); i++){
-                        board= stoi(event_block[i][1]);
-                        ch_ID = stoi(event_block[i][3]);     
-
-                        is_valid_ind(board, ch_ID,N_boards);
-
-                        v.data_type[board][ch_ID] = stoi(event_block[i][4], nullptr, 16);
-                        v.ToA[board][ch_ID] = stof(event_block[i][5]);    
-                        v.ToT[board][ch_ID] = stof(event_block[i][6]);   
-
-                    }
-
-                    t->Fill();
-                    // assign value to the start index of the next event
-                    ev_start = r;
                 }
             }
             break;
-
+        }
 
         case modes::Counting:
+        {
             cout << "The acquisition mode is Counting." << endl;
 
-            for (r=1; r<data.size(); r++){  // compare each row to the previous one
-                cur_tr_ID = stoi(data[r][1]);
-                pr_tr_ID = stoi(data[r-1][1]);
-                if (cur_tr_ID!=pr_tr_ID || r==(data.size()-1)){
-                    vector<vector<string>> event_block = get_event(data, r, ev_start);
+            uint64_t ID = 0;
+            reset<int64_t>(v.counts, v);
 
-                    v.Trg_Id = pr_tr_ID;
-                    v.TStamp = stold(data[r-1][0]);
-                    v.ch_mask = stoull(data[1][4], nullptr, 16);
-                    v.hits = stoi(data[r-1][3]);
+            for (vector<string> row : data){
+                v.Trg_Id = stoull(row[1]);
+                v.TStamp = stold(row[0]);
+                v.ch_mask = stoull(row[4], nullptr, 16);
+                v.hits = stoi(row[3]);
 
-                    reset<int64_t>(v.counts, v);
+                board= stoi(row[2]);
+                ch_ID = stoi(row[5]);  
+                is_valid_ind(board, ch_ID,N_boards);
+                v.counts[board][ch_ID] = stoi(row[6]);
 
-                    for (int i=0; i<event_block.size(); i++){
-                        board= stoi(event_block[i][2]);
-                        ch_ID = stoi(event_block[i][5]);  
-                        is_valid_ind(board, ch_ID,N_boards);
-                        v.counts[board][ch_ID] = stoi(event_block[i][6]);
-                    }
-
+                if (v.Trg_Id != ID){
+                    ID = v.Trg_Id;
                     t->Fill();
-                    // assign value to the start index of the next event
-                    ev_start = r;
+                    reset<int64_t>(v.counts, v);
                 }
             }
             break;
-
+        }
     }
     return t;
 }
