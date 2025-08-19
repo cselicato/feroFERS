@@ -35,7 +35,7 @@ int display_data(){
     bool masked;
     cin >> masked;
 
-    vector<int> channels = {0};
+    vector<int> channels = {};
 
     TFile * file = new TFile(inFile.c_str(), "read");
     if (!file || file->IsZombie()) {
