@@ -1,3 +1,7 @@
+#define NBOARDS 1
+#define NCHANNELS 64
+#define MAXHITS 100
+
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -18,12 +22,9 @@ enum class modes {
     Counting
 };
 
-// class to contain all the variables stored in the TTree
 class stored_vars
 {
     public:
-    int N_boards;
-    int max_hits;
     // metadata
     uint16_t board_mod;
     TString file_format;
@@ -40,53 +41,20 @@ class stored_vars
     uint64_t Trg_Id;   
     uint64_t ch_mask;     
     Int_t hits;
-
     
     // only the 2D and 3D variables need to have a different type than the one read in the binary file
-    int16_t** data_type;
-    int32_t** LG;
-    int32_t** HG;
-    int64_t** counts; // warning: (in principle) there could be loss of data...
-    float** ToA;         // does float need to change too?
-    float** ToT;
-    float*** ToA_timing;
-    float*** ToT_timing;
-    
-    stored_vars(int N_boards_, int max_hits_): N_boards(N_boards_), max_hits(max_hits_)
-    {
-        data_type = new int16_t*[N_boards];
-        LG = new int32_t*[N_boards];
-        HG = new int32_t*[N_boards];
-        counts = new int64_t*[N_boards];
-        ToA = new float*[N_boards];
-        ToT = new float*[N_boards];
-        ToA_timing = new float**[N_boards];
-        ToT_timing = new float**[N_boards];
-        
-        for (int i = 0; i < N_boards; i++) {
-            data_type[i] = new int16_t[64];
-            LG[i] = new int32_t[64];
-            HG[i] = new int32_t[64];
-            counts[i] = new int64_t[64];
-            ToA[i] = new float[64];
-            ToT[i] = new float[64];
-
-            ToA_timing[i] = new float*[64];
-            ToT_timing[i] = new float*[64];
-
-            for (int j = 0; j < 64; j++) {
-                ToA_timing[i][j] = new float[max_hits];
-                ToT_timing[i][j] = new float[max_hits];
-
-            }
-        }
-
-    }
-
-    int get_N_boards() const {return N_boards;}
-    int get_max_hits() const {return max_hits;}
+    int16_t data_type[NBOARDS][NCHANNELS];
+    int16_t data_type_timing[NBOARDS][NCHANNELS][MAXHITS];
+    int32_t LG[NBOARDS][NCHANNELS];
+    int32_t HG[NBOARDS][NCHANNELS];
+    int64_t counts[NBOARDS][NCHANNELS]; // warning: (in principle) there could be loss of data...
+    float ToA[NBOARDS][NCHANNELS];
+    float ToT[NBOARDS][NCHANNELS];
+    float ToA_timing[NBOARDS][NCHANNELS][MAXHITS];
+    float ToT_timing[NBOARDS][NCHANNELS][MAXHITS];
 
 };
+
 
 
 
@@ -106,28 +74,26 @@ class read_vars
 };
 
 template<typename T>
-T** reset(T** c, stored_vars& v){
-    for (int i = 0; i < v.get_N_boards(); i++) {
-        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
+void reset(T c[NBOARDS][NCHANNELS]){
+    for (int i = 0; i < NBOARDS; i++) {
+        for (int j = 0; j < NCHANNELS; j++) {
             c[i][j] = static_cast<T>(-1);
         }
     }
-    return c;
 }
 
 template<typename T>
-T*** reset(T*** c, stored_vars& v){
-    for (int i = 0; i < v.get_N_boards(); i++) {
-        for (int j = 0; j < 64; j++) { // 64 is fixed because it's the number of channels
-            for (int k=0; k<v.get_max_hits(); k++){
+void reset(T c[NBOARDS][NCHANNELS][MAXHITS]){
+    for (int i = 0; i < NBOARDS; i++) {
+        for (int j = 0; j < NCHANNELS; j++) {
+            for (int k=0; k<MAXHITS; k++){
                 c[i][j][k] = static_cast<T>(-1);
             }
         }
     }
-    return c;
 }
 
-void is_valid_ind(int board,int ch,int N_boards);
+void is_valid_ind(int board,int ch);
 vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long r, unsigned long long& ev_start);
 modes find_mode(const TString& str);
 modes find_mode(uint8_t acq_mode);

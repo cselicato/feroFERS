@@ -7,7 +7,7 @@ using namespace std;
 const char *argp_program_version = "converter 1.0";
 const char *argp_program_bug_address = "<carmen.selicato@cern.ch>";
 static char doc[] = "Code to convert a csv file written by the Janus software to a root file.";
-static char args_doc[] = "inputFile N_boards";
+static char args_doc[] = "inputFile";
 
 static struct argp_option options[] = {
   {"output", 'o', "FILE", 0, "Optional output file name"},
@@ -16,7 +16,6 @@ static struct argp_option options[] = {
 
 struct arguments {
   string inFile;
-  int N_boards=-1;  
   string outFile;
 };
 
@@ -29,13 +28,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     case ARGP_KEY_ARG:
       switch (state->arg_num) {
         case 0: arguments->inFile = arg; break;
-        case 1: arguments->N_boards = stoi(arg); break;
         default: return ARGP_ERR_UNKNOWN;
       }
       break;
     case ARGP_KEY_END:
-        if (arguments->inFile.empty() || arguments->N_boards == -1){
-            argp_failure(state, 1, 0, "Missing input file or number of boards. See --help for more information.");
+        if (arguments->inFile.empty()){
+            argp_failure(state, 1, 0, "Missing input file. See --help for more information.");
             exit(ARGP_ERR_UNKNOWN);
         }    
     default: return ARGP_ERR_UNKNOWN;
@@ -66,8 +64,6 @@ int main(int argc, char* argv[]){
     TStopwatch timer;
     timer.Start();
 
-    int max_hits = 100;
-
     struct arguments arguments;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
@@ -82,7 +78,7 @@ int main(int argc, char* argv[]){
     //     cout << endl;
     //     return 1;
     // }
-    stored_vars v(arguments.N_boards, max_hits);
+    stored_vars v;
 
     // process binary files
     if (arguments.inFile.substr(arguments.inFile.size()-4)==".dat") {

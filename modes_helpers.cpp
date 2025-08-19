@@ -1,7 +1,7 @@
 #include "modes_helpers.hpp"
 
-void is_valid_ind(int board,int ch,int N_boards){
-    if((board>=N_boards)||(ch>=64)){
+void is_valid_ind(int board,int ch){
+    if((board>=NBOARDS)||(ch>=NCHANNELS)){
         cout << "Board ID " << board << " and ch. ID " << ch << " are invalid."<< endl;
         throw runtime_error("Found invalid board ID or channel ID, unable to produce root file.");
     }
@@ -20,9 +20,9 @@ vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long lon
 
 modes find_mode(const TString& str) {
     if (str == "Spectroscopy") return modes::Spectroscopy;
-    if (str == "Spect_Timing")  return modes::Spect_Timing;
     if (str == "Timing_CStart")  return modes::Timing;
-    if (str == "Timing_CStop")  return modes::Timing;
+    if (str == "Timing_CStop")  return modes::Timing;    
+    if (str == "Spect_Timing")  return modes::Spect_Timing;
     if (str == "Counting")  return modes::Counting;
 
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
@@ -71,9 +71,6 @@ TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v){
 }
 
 TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
-    int N_boards = v.get_N_boards();
-    int max_hits = v.get_max_hits();
-
     t->Branch("TStamp_us",&v.TStamp, "TStamp_us/D");
     t->Branch("Num_Hits",&v.hits, "Num_Hits/I");
 
@@ -81,29 +78,29 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
         case modes::Spectroscopy:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
-            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",N_boards));
-            t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
-            t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
-
-            break;
-
-        
-        case modes::Spect_Timing:
-            t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
-            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
-            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",N_boards));
-            t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",N_boards));
-            t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",N_boards));
-            t->Branch("ToA",*v.ToA, Form("ToA[%i][64]/F",N_boards));
-            t->Branch("ToT",*v.ToT, Form("ToT[%i][64]/F",N_boards));
+            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",NBOARDS));
+            t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",NBOARDS));
+            t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",NBOARDS));
 
             break;
 
 
         case modes::Timing:
-            t->Branch("ToA",*v.ToA, Form("ToA[%i][64]/F",N_boards));
-            t->Branch("ToT",*v.ToT, Form("ToT[%i][64]/F",N_boards));
-            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",N_boards));
+            t->Branch("ToA", **v.ToA_timing, Form("ToA[%i][64][%i]/F",NBOARDS,MAXHITS));
+            t->Branch("ToT", **v.ToT_timing, Form("ToT[%i][64][%i]/F",NBOARDS,MAXHITS));
+            t->Branch("data_type", **v.data_type_timing,Form("data_type[%i][64][%i]/S",NBOARDS,MAXHITS));
+
+            break;            
+        
+
+        case modes::Spect_Timing:
+            t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
+            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
+            t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",NBOARDS));
+            t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",NBOARDS));
+            t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",NBOARDS));
+            t->Branch("ToA",*v.ToA, Form("ToA[%i][64]/F",NBOARDS));
+            t->Branch("ToT",*v.ToT, Form("ToT[%i][64]/F",NBOARDS));
 
             break;
 
@@ -111,7 +108,7 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
         case modes::Counting:
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
-            t->Branch("counts",*v.counts, Form("counts[%i][64]/L",N_boards));
+            t->Branch("counts",*v.counts, Form("counts[%i][64]/L",NBOARDS));
 
             break;
 
@@ -178,7 +175,6 @@ TTree * make_info_tree(vector<vector<string>>& metadata, const modes& mode, stor
 TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_vars &v){
     TTree *t = new TTree("datas","datas");
     make_branches_data(t, mode, v);
-    int N_boards = v.get_N_boards();
 
     Int_t ch_ID, board;
     Double_t cur_tr_T, pr_tr_T;
@@ -189,9 +185,9 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
         {
             cout << "Acquisition mode: Spectroscopy." << endl;
 
-            reset<int16_t>(v.data_type, v);
-            reset<Int_t>(v.LG, v);
-            reset<Int_t>(v.HG, v);
+            reset<int16_t>(v.data_type);
+            reset<Int_t>(v.LG);
+            reset<Int_t>(v.HG);
 
             for (int i=0; i<data.size(); i++){
                 vector<string> row = data[i];
@@ -203,7 +199,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
                 ch_ID = stoi(row[5]);
                 board= stoi(row[2]);
 
-                is_valid_ind(board, ch_ID,N_boards);
+                is_valid_ind(board, ch_ID);
 
                 v.data_type[board][ch_ID] = stoi(row[6], nullptr, 16);
                 v.LG[board][ch_ID] = stoi(row[7]);
@@ -216,23 +212,69 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
                 else if (v.TStamp != stod(data[i+1][0])){
                     t->Fill();
-                    reset<int16_t>(v.data_type, v);
-                    reset<Int_t>(v.LG, v);
-                    reset<Int_t>(v.HG, v);
+                    reset<int16_t>(v.data_type);
+                    reset<Int_t>(v.LG);
+                    reset<Int_t>(v.HG);
+                }
+            }
+            break;
+        }
+
+
+        case modes::Timing:
+        {
+            // the acquistion modes Timing_CStart and Timing_CStop have the same structure
+            cout << "The acquisition mode is Timing." << endl;
+
+            reset<int16_t>(v.data_type_timing);
+            reset<float>(v.ToA_timing);
+            reset<float>(v.ToT_timing);
+
+            int hit = 0;
+
+            for (int i=0; i<data.size(); i++){
+                vector<string> row = data[i];
+                v.TStamp = stod(row[0]);
+                v.hits = stoi(row[2]);
+
+                board= stoi(row[1]);
+                ch_ID = stoi(row[3]);    
+                
+                is_valid_ind(board, ch_ID);
+
+                v.data_type_timing[board][ch_ID][hit] = stoi(row[4], nullptr, 16);
+                v.ToA_timing[board][ch_ID][hit] = stof(row[5]);  
+                v.ToT_timing[board][ch_ID][hit] = stof(row[6]);  
+
+                if (hit>=v.hits){cout << "Something went wrong..."<<endl;}
+                hit++;
+        
+                if (i==data.size()-1){
+                    t->Fill();
+                    continue;
+                }
+
+                else if (v.TStamp != stod(data[i+1][0])){
+                    t->Fill();
+                    reset<int16_t>(v.data_type_timing);
+                    reset<float>(v.ToA_timing);
+                    reset<float>(v.ToT_timing);
+                    hit = 0;
                 }
             }
             break;
         }
         
+
         case modes::Spect_Timing:
         {
             cout << "Acquisition mode: Spect_Timing." << endl;
 
-            reset<int16_t>(v.data_type, v);
-            reset<Int_t>(v.LG, v);
-            reset<Int_t>(v.HG, v);
-            reset<float>(v.ToA, v);
-            reset<float>(v.ToT, v);
+            reset<int16_t>(v.data_type);
+            reset<Int_t>(v.LG);
+            reset<Int_t>(v.HG);
+            reset<float>(v.ToA);
+            reset<float>(v.ToT);
 
             for (int i=0; i<data.size(); i++){
                 vector<string> row = data[i];
@@ -244,7 +286,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
                 board= stoi(row[2]);
                 ch_ID = stoi(row[5]); 
 
-                is_valid_ind(board, ch_ID,N_boards);      
+                is_valid_ind(board, ch_ID);      
                 
                 v.data_type[board][ch_ID] = stoi(row[6], nullptr, 16);
                 v.LG[board][ch_ID] = stoi(row[7]);
@@ -259,61 +301,22 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
                 else if (v.TStamp != stod(data[i+1][0])){
                     t->Fill();
-                    reset<int16_t>(v.data_type, v);
-                    reset<Int_t>(v.LG, v);
-                    reset<Int_t>(v.HG, v);
-                    reset<float>(v.ToA, v);
-                    reset<float>(v.ToT, v);
+                    reset<int16_t>(v.data_type);
+                    reset<Int_t>(v.LG);
+                    reset<Int_t>(v.HG);
+                    reset<float>(v.ToA);
+                    reset<float>(v.ToT);
                 }
             }
             break;
         }
 
-
-
-        case modes::Timing:
-        {
-            // the acquistion modes Timing_CStart and Timing_CStop have the same structure
-            cout << "The acquisition mode is Timing." << endl;
-
-            reset<int16_t>(v.data_type, v);
-            reset<float>(v.ToA, v);
-            reset<float>(v.ToT, v);
-
-            for (int i=0; i<data.size(); i++){
-                vector<string> row = data[i];
-                v.TStamp = stod(row[0]);
-                v.hits = stoi(row[2]);
-
-                board= stoi(row[1]);
-                ch_ID = stoi(row[3]);     
-
-                is_valid_ind(board, ch_ID,N_boards);
-
-                v.data_type[board][ch_ID] = stoi(row[4], nullptr, 16);
-                v.ToA[board][ch_ID] = stof(row[5]);    
-                v.ToT[board][ch_ID] = stof(row[6]);   
-        
-                if (i==data.size()-1){
-                    t->Fill();
-                    continue;
-                }
-
-                else if (v.TStamp != stod(data[i+1][0])){
-                    t->Fill();
-                    reset<int16_t>(v.data_type, v);
-                    reset<float>(v.ToA, v);
-                    reset<float>(v.ToT, v);
-                }
-            }
-            break;
-        }
 
         case modes::Counting:
         {
             cout << "The acquisition mode is Counting." << endl;
 
-            reset<int64_t>(v.counts, v);
+            reset<int64_t>(v.counts);
 
             for (int i=0; i<data.size(); i++){
                 vector<string> row = data[i];
@@ -324,7 +327,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
                 board= stoi(row[2]);
                 ch_ID = stoi(row[5]);  
-                is_valid_ind(board, ch_ID,N_boards);
+                is_valid_ind(board, ch_ID);
                 v.counts[board][ch_ID] = stoi(row[6]);
 
                 if (i==data.size()-1){
@@ -334,7 +337,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
                 else if (v.TStamp != stod(data[i+1][0])){
                     t->Fill();
-                    reset<int64_t>(v.counts, v);
+                    reset<int64_t>(v.counts);
                 }
             }
             break;
