@@ -74,6 +74,7 @@ class read_vars
 };
 
 template<typename T>
+
 void reset(T c[NBOARDS][NCHANNELS]){
     for (int i = 0; i < NBOARDS; i++) {
         for (int j = 0; j < NCHANNELS; j++) {

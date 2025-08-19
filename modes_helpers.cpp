@@ -215,16 +215,19 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
                     reset<int16_t>(v.data_type);
                     reset<Int_t>(v.LG);
                     reset<Int_t>(v.HG);
+
                 }
             }
             break;
         }
 
 
+
         case modes::Timing:
         {
             // the acquistion modes Timing_CStart and Timing_CStop have the same structure
             cout << "The acquisition mode is Timing." << endl;
+
 
             reset<int16_t>(v.data_type_timing);
             reset<float>(v.ToA_timing);
@@ -306,10 +309,13 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
                     reset<Int_t>(v.HG);
                     reset<float>(v.ToA);
                     reset<float>(v.ToT);
+
                 }
             }
             break;
         }
+
+
 
 
         case modes::Counting:
@@ -317,6 +323,7 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
             cout << "The acquisition mode is Counting." << endl;
 
             reset<int64_t>(v.counts);
+
 
             for (int i=0; i<data.size(); i++){
                 vector<string> row = data[i];
@@ -327,7 +334,9 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
                 board= stoi(row[2]);
                 ch_ID = stoi(row[5]);  
+
                 is_valid_ind(board, ch_ID);
+
                 v.counts[board][ch_ID] = stoi(row[6]);
 
                 if (i==data.size()-1){
@@ -337,7 +346,9 @@ TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_v
 
                 else if (v.TStamp != stod(data[i+1][0])){
                     t->Fill();
+
                     reset<int64_t>(v.counts);
+
                 }
             }
             break;
