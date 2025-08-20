@@ -56,8 +56,6 @@ class stored_vars
 };
 
 
-
-
 // class for the variables used in the parsing of the .dat files
 // (that are not already in classes)
 class read_vars
@@ -74,7 +72,6 @@ class read_vars
 };
 
 template<typename T>
-
 void reset(T c[NBOARDS][NCHANNELS]){
     for (int i = 0; i < NBOARDS; i++) {
         for (int j = 0; j < NCHANNELS; j++) {
@@ -95,11 +92,8 @@ void reset(T c[NBOARDS][NCHANNELS][MAXHITS]){
 }
 
 void is_valid_ind(int board,int ch);
-vector<vector<string>> get_event(vector<vector<string>>& data, unsigned long long r, unsigned long long& ev_start);
 modes find_mode(const TString& str);
 modes find_mode(uint8_t acq_mode);
+void reset_stored_vars(stored_vars &v, modes &mode);
 TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v);
 TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v);
-TTree * make_info_tree(vector<vector<string>>& metadata, const modes& mode, stored_vars &v);
-TTree * make_data_tree(vector<vector<string>>& data, const modes& mode, stored_vars &v);
-

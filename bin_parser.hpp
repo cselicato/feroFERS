@@ -70,4 +70,6 @@ class EDATA {
 };
 #pragma pack(pop)
 
-int get_bin_data(string inFile, string outFile, stored_vars &v);
+void fill_info_var(FHEADER &fh, stored_vars &v);
+void fill_data_var(EHEADER &eh, stored_vars &v);
+int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v);

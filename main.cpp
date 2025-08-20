@@ -1,4 +1,3 @@
-#include "modes_helpers.hpp"
 #include "csv_parser.hpp"
 #include "bin_parser.hpp"
 
@@ -43,22 +42,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
 
-
-void is_consistent(vector<vector<string>>& data){
-    string line;
-    set<size_t> row_sizes = {};
-
-    for (vector<string> row : data){
-        row_sizes.insert(row.size());
-    }
-
-    if (row_sizes.size() != 1){
-        throw runtime_error("The file has inconsistent columns, unable to produce root file.");
-    }
-
-}
-
-
 int main(int argc, char* argv[]){
 
     TStopwatch timer;
@@ -73,54 +56,37 @@ int main(int argc, char* argv[]){
         cout << endl;
     }
 
-    // if (arguments.outFile.substr(arguments.inFile.size()-5)!=".root") {
-    //     cout << "Output file " << arguments.outFile << " is invalid: it must be a .root file." << endl;
-    //     cout << endl;
-    //     return 1;
-    // }
+    if (arguments.outFile.substr(arguments.outFile.size()-5)!=".root") {
+        cout << "Output file " << arguments.outFile << " is invalid: it must be a .root file." << endl;
+        cout << endl;
+        return 1;
+    }
+
     stored_vars v;
+    TTree *tr_info = new TTree("info","info");
+    TTree *tr_data = new TTree("datas","datas");
 
     // process binary files
     if (arguments.inFile.substr(arguments.inFile.size()-4)==".dat") {
         cout << "Input file is a binary file." << endl;
-        get_bin_data(arguments.inFile, arguments.outFile, v);
-        cout << endl;
-        return 0;
+        try {
+            parse_bin(arguments.inFile,  tr_info, tr_data, v);
+        }
+        catch(const exception& e){
+            cerr << e.what() << '\n';
+            return 1;
+        }        
     }
 
-    fstream file;
-    file.open(arguments.inFile, ios::in);
-
-    if (!file.is_open()) {
-        cout << "Error while opening file " << arguments.inFile << endl;
-        return 1;
-    }
-    cout << "Opened file: " << arguments.inFile << endl;
-
-    vector<vector<string>> metadata = get_csv_metadata(file);
-    vector<vector<string>> data = get_csv_data(file);
-
-    cout << "Done reading file." << endl;
-
-    try {
-        is_consistent(data);
-        cout << "The file has consistent columns."<<endl;
-    }
-    catch(const exception& e){
-        cerr << e.what() << '\n';
-        return 1;
-    }
-    
-
-    TString acq_mode = metadata[3][1];   
-    TTree *tr_data, *tr_info;   
-    try {
-        tr_data = make_data_tree(data,find_mode(acq_mode), v);
-        tr_info = make_info_tree(metadata,find_mode(acq_mode), v);
-    }
-    catch(const exception& e){
-        cerr << e.what() << '\n';
-        return 1;
+    else {
+        cout << "Input file is a CSV file." << endl;
+        try {
+            parse_csv(arguments.inFile, tr_info, tr_data,v);
+        }
+        catch(const exception& e){
+            cerr << e.what() << '\n';
+            return 1;
+        }        
     }
 
     // write trees in the output file

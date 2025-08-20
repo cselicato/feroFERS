@@ -1,9 +1,8 @@
 #include "modes_helpers.hpp"
 #include "bin_parser.hpp"
 
-#include "csv_parser.hpp"
 
-
+// function to fill the variable stored_vars v for the binary file case
 void fill_info_var(FHEADER &fh, stored_vars &v){
     // fill v with the metadata cointained in the file header
     v.board_mod = fh.board_mod;
@@ -41,12 +40,11 @@ void fill_data_var(EHEADER &eh, stored_vars &v){
     v.ch_mask = eh.ch_mask; 
 }
 
-int get_bin_data(string inFile, string outFile, stored_vars &v){
+int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
     // open file
     fstream file(inFile, ios::in|ios::binary|ios::ate);
     if (!file) {
-        cerr << "Failed to open file\n";
-        return 1;
+        throw runtime_error("Failed to open file.");
     }
     // find file size and go back to the beginning
     Int_t file_size = file.tellg();
@@ -62,12 +60,8 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
     // read file header (exactly the same for each acquisition mode)
     file.read(reinterpret_cast<char*>(&fh), sizeof(FHEADER));
     modes acq_mod = find_mode(fh.acq_mode);
-    if(fh.time_unit&0x1){v.time_unit = "ns";}
-    else {v.time_unit = "LSB";}
 
-    // make trees 
-    TTree *tr_info = new TTree("info","info");
-    TTree *tr_data = new TTree("datas","datas");
+    // make trees' branches 
     make_branches_info(tr_info, acq_mod, v);
     make_branches_data(tr_data, acq_mod, v);
 
@@ -86,13 +80,13 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
                 
                 int hits = 0;
-                reset<int16_t>(v.data_type);
-                reset<int32_t>(v.LG);
-                reset<int32_t>(v.HG);
+                reset_stored_vars(v, acq_mod);
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
+
+                    is_valid_ind(eh.board_Id, event.ch_ID);
 
                     v.data_type[eh.board_Id][event.ch_ID] = event.data_type;
 
@@ -120,13 +114,13 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 file.read(reinterpret_cast<char*>(&t_eh), sizeof(T_EHEADER));
 
                 int hits = 0; 
-                reset<int16_t>(v.data_type_timing);
-                reset<float>(v.ToT_timing);
-                reset<float>(v.ToA_timing);
+                reset_stored_vars(v, acq_mod);
 
                 // READ EVENT DATA
                 while (file.tellg()<(t_eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
+
+                    is_valid_ind(eh.board_Id, event.ch_ID);
 
                     v.data_type_timing[eh.board_Id][event.ch_ID][hits] = event.data_type;
 
@@ -150,8 +144,8 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                             v.ToT_timing[t_eh.board_ID][event.ch_ID][hits] = r.ToT_LSB;
                         }
                     }
-
-                    if (hits>=v.hits){cout << "Something went wrong..."<<endl;}
+                    
+                    if (hits>=v.hits){throw runtime_error("Something went wrong with the counting of the number of hits.");}
                     hits++;
                 }
 
@@ -169,15 +163,13 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
 
                 int hits = 0;
-                reset<int16_t>(v.data_type);
-                reset<int32_t>(v.LG);
-                reset<int32_t>(v.HG);
-                reset<float>(v.ToT);
-                reset<float>(v.ToA);
+                reset_stored_vars(v, acq_mod);
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
+
+                    is_valid_ind(eh.board_Id, event.ch_ID);
 
                     v.data_type[eh.board_Id][event.ch_ID] = event.data_type;
                        
@@ -229,11 +221,14 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
                 // READ EVENT DATA
                 int hits = 0;
-                reset<int64_t>(v.counts);
+                reset_stored_vars(v, acq_mod);
 
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&r.ch_ID), sizeof(uint8_t));
                     file.read(reinterpret_cast<char*>(&r.counts), sizeof(uint64_t));
+
+                    is_valid_ind(eh.board_Id, event.ch_ID);
+
                     v.counts[eh.board_Id][r.ch_ID] = (int64_t)r.counts;
                     hits++;
                 }
@@ -245,13 +240,6 @@ int get_bin_data(string inFile, string outFile, stored_vars &v){
             }
             break;
         }
-
-
-    TFile fout(outFile.c_str(), "recreate");
-    tr_data->Write();
-    tr_info->Write();
-    // close file
-    fout.Close();
 
     return 0;
 };
