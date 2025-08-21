@@ -3,6 +3,7 @@
 #define MAXHITS 100
 
 #include <stdio.h>
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -12,6 +13,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include <TStopwatch.h>
+#include "TTimeStamp.h"
 
 using namespace std;
 
@@ -34,7 +36,7 @@ class stored_vars
     uint16_t e_Nbins;
     uint64_t time_epoch;
     Double_t time_conv;
-    TString time_UTC;
+    TTimeStamp * time_UTC;
     TString time_unit;
     // data
     Double_t TStamp;    
@@ -56,20 +58,6 @@ class stored_vars
 };
 
 
-// class for the variables used in the parsing of the .dat files
-// (that are not already in classes)
-class read_vars
-{
-    public:
-    uint16_t LG;
-    uint16_t HG;
-    float ToA_ns;
-    float ToT_ns;
-    uint32_t ToA_LSB;
-    uint16_t ToT_LSB;
-    uint8_t ch_ID;
-    uint64_t counts;
-};
 
 template<typename T>
 void reset(T c[NBOARDS][NCHANNELS]){

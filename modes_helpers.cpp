@@ -9,20 +9,20 @@ void is_valid_ind(int board,int ch){
 
 
 modes find_mode(const TString& str) {
-    if (str == "Spectroscopy") return modes::Spectroscopy;
-    if (str == "Timing_CStart")  return modes::Timing;
-    if (str == "Timing_CStop")  return modes::Timing;    
-    if (str == "Spect_Timing")  return modes::Spect_Timing;
-    if (str == "Counting")  return modes::Counting;
+    if (str == "Spectroscopy"){cout << "Acquisition mode is: Spectroscopy."<<endl; return modes::Spectroscopy;}
+    if (str == "Timing_CStart"){cout << "Acquisition mode is: Timing_CStart."<<endl;  return modes::Timing;}
+    if (str == "Timing_CStop"){cout << "Acquisition mode is: Timing_CStop."<<endl;  return modes::Timing;}    
+    if (str == "Spect_Timing"){cout << "Acquisition mode is: Spect_Timing."<<endl;  return modes::Spect_Timing;}
+    if (str == "Counting"){cout << "Acquisition mode is: Counting."<<endl;  return modes::Counting;}
 
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
 
 modes find_mode(uint8_t acq_mode) {
-    if ((acq_mode & 0x1) && !(acq_mode & 0x2)) return modes::Spectroscopy;
-    if ((acq_mode & 0x2) && !(acq_mode & 0x1))  return modes::Timing;
-    if ((acq_mode & 0x3)  && (acq_mode & 0x2))  return modes::Spect_Timing;
-    if (acq_mode & 0x4)  return modes::Counting;
+    if ((acq_mode & 0x1) && !(acq_mode & 0x2)){cout << "Acquisition mode is: Spectroscopy."<<endl; return modes::Spectroscopy;}
+    if ((acq_mode & 0x2) && !(acq_mode & 0x1)){cout << "Acquisition mode is: Timing."<<endl;  return modes::Timing;}
+    if ((acq_mode & 0x3)  && (acq_mode & 0x2)){cout << "Acquisition mode is: Spect_Timing."<<endl;  return modes::Spect_Timing;}
+    if (acq_mode & 0x4){cout << "Acquisition mode is: Counting."<<endl;  return modes::Counting;}
 
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }

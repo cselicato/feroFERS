@@ -1,3 +1,6 @@
+#include <argp.h>
+#include "TStopwatch.h"
+
 #include "csv_parser.hpp"
 #include "bin_parser.hpp"
 
@@ -43,6 +46,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
 
 int main(int argc, char* argv[]){
+
+    cout << endl;
+    cout << "This code has been compiled with:"<<endl;
+    cout << "NBOARDS = " << NBOARDS << ";" << endl;
+    cout << "NCHANNELS = " << NCHANNELS << ";" << endl;
+    cout << "MAXHITS = " << MAXHITS << ";" << endl;
+    cout << endl;
 
     TStopwatch timer;
     timer.Start();

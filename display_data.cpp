@@ -11,6 +11,7 @@
 #include "TTreeReader.h"
 #include "TPavesText.h"
 #include "TPaveStats.h"
+#include "TTimeStamp.h"
 
 using namespace std;
 
@@ -58,9 +59,13 @@ int display_data(){
             TString* str_val = (TString*)leaf->GetValuePointer();
             cout << b->GetName() <<": "<< *str_val << endl;
 
-            if (b_name=="time_UTC"||b_name=="acq_mode"){
+            if (b_name=="acq_mode"){
                 paves->AddText(*str_val);   }
         }
+        else if (b_name=="time_UTC"){
+            TTimeStamp* tstart = (TTimeStamp*)leaf->GetValuePointer();
+            paves->AddText(tstart->AsString());
+        }        
         else {
             cout << b->GetName() <<": "<< leaf->GetValue() << endl;
             if (b_name=="run"){

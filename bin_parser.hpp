@@ -55,7 +55,7 @@ class EHEADER {
 class T_EHEADER {
     public:
     uint16_t ev_size;        // int 16 bit
-    uint8_t board_ID;        // int 8 bit
+    uint8_t board_Id;        // int 8 bit
     double TStamp;           // double 64 (in this case the time stamp is also the reference time)
     uint16_t hits;           // int 16 bit
 };
@@ -65,11 +65,25 @@ class T_EHEADER {
 #pragma pack(push, 1)
 class EDATA {
     public:
-    uint8_t ch_ID;             // 8 bit
+    uint8_t ch_Id;             // 8 bit
     uint8_t data_type;         // 8 bit
 };
 #pragma pack(pop)
 
-void fill_info_var(FHEADER &fh, stored_vars &v);
+// class for the variables used in the parsing of the .dat files
+class read_vars
+{
+    public:
+    uint16_t LG;
+    uint16_t HG;
+    float ToA_ns;
+    float ToT_ns;
+    uint32_t ToA_LSB;
+    uint16_t ToT_LSB;
+    uint8_t ch_Id;
+    uint64_t counts;
+};
+
+void fill_info_var(FHEADER &fh, stored_vars &v, modes &mode);
 void fill_data_var(EHEADER &eh, stored_vars &v);
 int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v);

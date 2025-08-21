@@ -22,6 +22,8 @@ void is_consistent(int size, int exp_size){
 
 // function to fill the variable stored_vars v with the metadata for the csv case
 void fill_info_var(vector<vector<string>> &metadata, modes &mode, stored_vars &v){
+    time_t sec_epoch;
+    
     v.board_mod = stoi(metadata[0][1]);
     v.file_format = metadata[1][1];
     v.janus_rel = metadata[2][1];
@@ -32,7 +34,8 @@ void fill_info_var(vector<vector<string>> &metadata, modes &mode, stored_vars &v
             v.e_Nbins = stoi(metadata[4][1]);
             v.run = stoi(metadata[5][1]);
             v.time_epoch = stoul(metadata[6][1]);
-            v.time_UTC = metadata[7][1]+":"+metadata[7][2]+":"+metadata[7][3];        
+            sec_epoch = v.time_epoch/1000; // convert to seconds
+            v.time_UTC = new TTimeStamp(sec_epoch);            
 
             break;
 
@@ -42,7 +45,8 @@ void fill_info_var(vector<vector<string>> &metadata, modes &mode, stored_vars &v
             v.time_unit = metadata[6][1];
             v.run = stoi(metadata[7][1]);
             v.time_epoch = stoul(metadata[8][1]);
-            v.time_UTC = metadata[9][1]+":"+metadata[9][2]+":"+metadata[9][3];
+            sec_epoch = v.time_epoch/1000; // convert to seconds
+            v.time_UTC = new TTimeStamp(sec_epoch);
 
             break;
 
@@ -51,14 +55,16 @@ void fill_info_var(vector<vector<string>> &metadata, modes &mode, stored_vars &v
             v.time_unit = metadata[5][1];
             v.run = stoi(metadata[6][1]);
             v.time_epoch = stoul(metadata[6][1]);
-            v.time_UTC = metadata[8][1]+":"+metadata[8][2]+":"+metadata[8][3];  
+            sec_epoch = v.time_epoch/1000; // convert to seconds
+            v.time_UTC = new TTimeStamp(sec_epoch); 
 
             break;
 
         case modes::Counting:
             v.run = stoi(metadata[4][1]);
             v.time_epoch = stoul(metadata[5][1]);
-            v.time_UTC = metadata[6][1]+":"+metadata[6][2]+":"+metadata[6][3];  
+            sec_epoch = v.time_epoch/1000; // convert to seconds
+            v.time_UTC = new TTimeStamp(sec_epoch);  
 
             break;
 

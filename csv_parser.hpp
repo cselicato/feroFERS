@@ -3,11 +3,9 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <set>
 #include <argp.h>
 #include "TFile.h"
 #include "TTree.h"
-#include <TStopwatch.h>
 #include "modes_helpers.hpp"
 
 using namespace std;
