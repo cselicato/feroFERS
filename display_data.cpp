@@ -21,7 +21,7 @@ TH1F * make_hist(const string& name, int n_bins, vector<float> vec, bool mask){
     TH1F *h = new TH1F(name.c_str(), name.c_str(),n_bins, start-stop*0.02, stop+stop*0.02);
     for (auto x : vec){
         if (mask){
-            if (x!=-1 && x!=-2){h->Fill(x); } 
+            if (x!=-1){h->Fill(x); } 
         }
         else {h->Fill(x); }
         }
@@ -33,8 +33,7 @@ int display_data(){
     string inFile;
     cin >> inFile;
     
-    bool masked;
-    cin >> masked;
+    bool masked = true;    // if true: histogram contains only entries != -1
 
     vector<int> channels = {};
 
@@ -73,7 +72,7 @@ int display_data(){
         }
     }
     cout << endl;
-
+    
     TTree * tree_data = (TTree*)file->Get("datas");
     int N = tree_data->GetEntriesFast();
     int n_b = tree_data->GetNbranches();
@@ -100,20 +99,10 @@ int display_data(){
                 b_content.push_back(val);
             }
             else {
-                if(!channels.empty()){
-                int N_boards = len/64;
-                for (int i=0;i<N_boards;i++){
-                    for (int ch : channels){
-                    auto val = leaf->GetValue(i*64+ch);
-                    b_content.push_back(val);
-                    }
-                }}
-
-                else {
-                    for (int j=0;j<len;j++){
-                    auto val = leaf->GetValue(j);
-                    b_content.push_back(val);
-                }}
+                for (int j=0;j<len;j++){
+                auto val = leaf->GetValue(j);
+                b_content.push_back(val);
+                }
             }
         }
 

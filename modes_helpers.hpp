@@ -27,6 +27,9 @@ enum class modes {
 class stored_vars
 {
     public:
+    UInt_t n_boards = NBOARDS;
+    UInt_t n_channels = NCHANNELS;
+    UInt_t max_hits = MAXHITS;
     // metadata
     uint16_t board_mod;
     TString file_format;

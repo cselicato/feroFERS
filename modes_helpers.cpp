@@ -58,6 +58,9 @@ void reset_stored_vars(stored_vars &v, modes &mode){
 
 TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v){
     // create common branches
+    t->Branch("n_boards", &v.n_boards, "n_boards/i");
+    t->Branch("n_channels", &v.n_channels, "n_channels/i");
+    t->Branch("max_hits", &v.max_hits, "max_hits/i");
     t->Branch("board_mod", &v.board_mod, "board_mod/s");
     t->Branch("file_format", &v.file_format);
     t->Branch("janus_rel", &v.janus_rel);
