@@ -223,7 +223,7 @@ int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
 
             }
             fill_data_var(row, acq_mod, v, hit);
-            if (hit>=v.hits){throw runtime_error("Something went wrong with the counting of the number of hits.");}
+            //if (hit>=v.hits){throw runtime_error("Something went wrong with the counting of the number of hits.");}
             hit++;
         
             
