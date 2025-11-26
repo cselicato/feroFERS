@@ -79,7 +79,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
         case modes::Spectroscopy:
             v.Trg_Id = stoi(row[1]);
             v.TStamp = stod(row[0]);
-            v.hits = stoi(row[3]);
+            //v.hits = stoi(row[3]);
             v.ch_mask = stoull(row[4], nullptr, 16);
             
             ch_ID = stoi(row[5]);
@@ -95,7 +95,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
 
         case modes::Timing:
             v.TStamp = stod(row[0]);
-            v.hits = stoi(row[2]);
+            //v.hits = stoi(row[2]);
 
             board= stoi(row[1]);
             ch_ID = stoi(row[3]);    
@@ -106,7 +106,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             v.ToA_timing[board][ch_ID][hit] = stof(row[5]);  
             v.ToT_timing[board][ch_ID][hit] = stof(row[6]);  
 
-            if (hit>=v.hits){cout << "Something went wrong..."<<endl;}
+            if (hit>=stoi(row[2])){cout << "Something went wrong..."<<endl;}
             hit++;
             break;            
 
@@ -114,7 +114,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             v.Trg_Id = stoull(row[1]);
             v.ch_mask = stoull(row[4], nullptr, 16);
             v.TStamp = stod(row[0]);
-            v.hits = stoi(row[3]);
+            //v.hits = stoi(row[3]);
 
             board= stoi(row[2]);
             ch_ID = stoi(row[5]); 
@@ -133,7 +133,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             v.Trg_Id = stoull(row[1]);
             v.TStamp = stod(row[0]);
             v.ch_mask = stoull(row[4], nullptr, 16);
-            v.hits = stoi(row[3]);
+            //v.hits = stoi(row[3]);
 
             board= stoi(row[2]);
             ch_ID = stoi(row[5]);  
@@ -215,6 +215,7 @@ int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
             
             if (new_TStamp != old_TStamp){ // event is different OR first one, update old_TStamp
                 if (old_TStamp != -1){ // event is different: fill tree and LATER fill v
+                    v.hits = hit;
                     tr_data->Fill();
                     hit = 0;
                 }
@@ -224,8 +225,7 @@ int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
             }
             fill_data_var(row, acq_mod, v, hit);
             //if (hit>=v.hits){throw runtime_error("Something went wrong with the counting of the number of hits.");}
-            hit++;
-        
+            hit++;        
             
         }
     } 
