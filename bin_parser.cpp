@@ -73,6 +73,11 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
     // read the events
     streampos ev_start;
 
+    int ifrag = 0;
+    float old_Trg_Id = -1;
+    
+    int hits;
+
     switch (acq_mod) {
         case modes::Spectroscopy:
             while(file.tellg()<file_size){
@@ -80,8 +85,21 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
                 
-                int hits = 0;
-                reset_stored_vars(v, acq_mod);
+                // if there is a new Trg_Id...
+                if (eh.Trg_Id!=old_Trg_Id){
+                    
+                    // if this is not the first event read, finalise the stored_data object and fill the tree
+                    if (ifrag>0){
+                        v.hits = hits;
+                        tr_data->Fill();
+                    }
+                    
+                    // in any case, updateold_Trg_Id, reset hit count and update/reset various datas entries
+                    old_Trg_Id = eh.Trg_Id;
+                    hits = 0;
+                    reset_stored_vars(v, acq_mod);
+                    fill_data_var(eh, v);
+                }
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
@@ -101,11 +119,13 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
                     }
                     hits++;
                 }
-                fill_data_var(eh, v);
-                v.hits = hits;
-
-                tr_data->Fill();
+                ifrag++;
             }
+            
+            //special update/fill for last event
+            v.hits = hits;
+            tr_data->Fill();
+            
             break;
 
         case modes::Timing:
@@ -114,7 +134,7 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&t_eh), sizeof(T_EHEADER));
 
-                int hits = 0; 
+                hits = 0; 
                 reset_stored_vars(v, acq_mod);
 
                 // READ EVENT DATA
@@ -163,8 +183,21 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
 
-                int hits = 0;
-                reset_stored_vars(v, acq_mod);
+                // if there is a new Trg_Id...
+                if (eh.Trg_Id!=old_Trg_Id){
+                    
+                    // if this is not the first event read, finalise the stored_data object and fill the tree
+                    if (ifrag>0){
+                        v.hits = hits;
+                        tr_data->Fill();
+                    }
+                    
+                    // in any case, updateold_Trg_Id, reset hit count and update/reset various datas entries
+                    old_Trg_Id = eh.Trg_Id;
+                    hits = 0;
+                    reset_stored_vars(v, acq_mod);
+                    fill_data_var(eh, v);
+                }
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
@@ -208,11 +241,13 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
                     }
                     hits++;
                 }
-                fill_data_var(eh, v);
-                v.hits = hits;
-
-                tr_data->Fill();
+                ifrag++;
             }
+            
+		    //special update/fill for last event
+            v.hits = hits;
+            tr_data->Fill();
+            
             break;
 
         case modes::Counting:
@@ -221,7 +256,7 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
                 // READ EVENT DATA
-                int hits = 0;
+                hits = 0;
                 reset_stored_vars(v, acq_mod);
 
                 while (file.tellg()<(eh.ev_size+ev_start)){
