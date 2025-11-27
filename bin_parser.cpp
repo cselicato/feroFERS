@@ -74,9 +74,11 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
     streampos ev_start;
 
     int ifrag = 0;
-    float old_Trg_Id = -1;
+    int old_Trg_Id = -1;
+    float TStamp_cut = (fh.time_unit&0x1) ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
+    float old_TStamp = -2*TStamp_cut; // only used in timing, other modes use Trg_Id
     
-    int hits;
+    int hits, hits_frag_timing;
 
     switch (acq_mod) {
         case modes::Spectroscopy:
@@ -134,47 +136,62 @@ int parse_bin(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&t_eh), sizeof(T_EHEADER));
 
-                hits = 0; 
-                reset_stored_vars(v, acq_mod);
+                // if there is a "new" TStamp (difference within TStamp_cut set above)...
+                if ((t_eh.TStamp-old_TStamp)*(t_eh.TStamp-old_TStamp)>TStamp_cut*TStamp_cut){
+                    
+                    // if this is not the first event read, finalise the stored_data object and fill the tree
+                    if (ifrag>0){
+                        v.hits = hits;
+                        tr_data->Fill();
+                    }
+                    
+                    // in any case, updateold_Trg_Id, reset hit count and update/reset various datas entries
+                    old_TStamp = t_eh.TStamp;
+                    hits = 0;
+                    reset_stored_vars(v, acq_mod);
+                    v.TStamp = t_eh.TStamp;
+                }
 
                 // READ EVENT DATA
+                int hits_frag_timing = 0;
                 while (file.tellg()<(t_eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
-
                     is_valid_ind(t_eh.board_Id, event.ch_Id);
 
-                    v.data_type_timing[t_eh.board_Id][event.ch_Id][hits] = (int16_t)event.data_type;
+                    v.data_type_timing[t_eh.board_Id][event.ch_Id][hits_frag_timing] = (int16_t)event.data_type;
 
                     if(fh.time_unit&0x1){ // times are saved as ns
                         if(event.data_type&0x10){ // ToA saved
                             file.read(reinterpret_cast<char*>(&r.ToA_ns), sizeof(r.ToA_ns));
-                            v.ToA_timing[t_eh.board_Id][event.ch_Id][hits] = r.ToA_ns;
+                            v.ToA_timing[t_eh.board_Id][event.ch_Id][hits_frag_timing] = r.ToA_ns;
                         }
                         if(event.data_type&0x20){ // ToT saved
                             file.read(reinterpret_cast<char*>(&r.ToT_ns), sizeof(r.ToT_ns));
-                            v.ToT_timing[t_eh.board_Id][event.ch_Id][hits] = r.ToT_ns;
+                            v.ToT_timing[t_eh.board_Id][event.ch_Id][hits_frag_timing] = r.ToT_ns;
                         }
                     }
                     else{ // times are saved as LSB
                         if(event.data_type&0x10){ // ToA saved
                             file.read(reinterpret_cast<char*>(&r.ToA_LSB), sizeof(r.ToA_LSB));
-                            v.ToA_timing[t_eh.board_Id][event.ch_Id][hits] = r.ToA_LSB;
+                            v.ToA_timing[t_eh.board_Id][event.ch_Id][hits_frag_timing] = r.ToA_LSB;
                         }
                         if(event.data_type&0x20){ // ToT saved
                             file.read(reinterpret_cast<char*>(&r.ToT_LSB), sizeof(r.ToT_LSB));
-                            v.ToT_timing[t_eh.board_Id][event.ch_Id][hits] = r.ToT_LSB;
+                            v.ToT_timing[t_eh.board_Id][event.ch_Id][hits_frag_timing] = r.ToT_LSB;
                         }
                     }
                     
                     // if (hits>=v.hits){throw runtime_error("Something went wrong with the counting of the number of hits.");}
                     hits++;
+                    hits_frag_timing++;
                 }
-
-                v.TStamp = t_eh.TStamp;
-                v.hits = hits;
-
-                tr_data->Fill();
+                ifrag++;
             }
+            
+            //special update/fill for last event
+            v.hits = hits;
+            tr_data->Fill();
+
             break;
 
         case modes::Spect_Timing:

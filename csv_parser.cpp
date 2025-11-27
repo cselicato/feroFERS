@@ -27,9 +27,13 @@ void fill_info_var(vector<vector<string>> &metadata, modes &mode, stored_vars &v
     v.board_mod = stoi(metadata[0][1]);
     v.file_format = metadata[1][1];
     v.janus_rel = metadata[2][1];
-    v.acq_mode = metadata[3][1];
+    if ((metadata[3][1] == "Timing_CStart")||(metadata[3][1] == "Timing_CStop")){
+        v.acq_mode = "Timing";
+    }else{
+        v.acq_mode = metadata[3][1];
+    }
 
-   switch (mode) {
+    switch (mode) {
         case modes::Spectroscopy:
             v.e_Nbins = stoi(metadata[4][1]);
             v.run = stoi(metadata[5][1]);
@@ -75,7 +79,7 @@ void fill_info_var(vector<vector<string>> &metadata, modes &mode, stored_vars &v
 void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
     Int_t ch_ID, board;
 
-   switch (mode) {
+    switch (mode) {
         case modes::Spectroscopy:
             v.Trg_Id = stoi(row[1]);
             v.TStamp = stod(row[0]);
@@ -94,7 +98,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             break;
 
         case modes::Timing:
-            v.TStamp = stod(row[0]);
+            //v.TStamp = stod(row[0]);
             //v.hits = stoi(row[2]);
 
             board= stoi(row[1]);
@@ -106,7 +110,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             v.ToA_timing[board][ch_ID][hit] = stof(row[5]);  
             v.ToT_timing[board][ch_ID][hit] = stof(row[6]);  
 
-            if (hit>=stoi(row[2])){cout << "Something went wrong..."<<endl;}
+            //if (hit>=stoi(row[2])){cout << "Something went wrong..."<<endl;}
             hit++;
             break;            
 
@@ -198,10 +202,14 @@ int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
     tr_info->Fill();
 
     // read the events
-    float old_TStamp = -1;
     float new_TStamp = 0;
+    float TStamp_cut = (v.time_unit=="ns") ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
+    float old_TStamp = -2*TStamp_cut; // used in all data modes
 
-    int hit=0;
+    int board_now;
+
+    int hit=0, hit_tot=0;
+    int hit_frag_timing[NBOARDS] = {0};
     while (getline(file, line)){
         if (line.empty()==false){
             
@@ -210,23 +218,26 @@ int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
 
             vector<string> row = split_line(line, ',');
             is_consistent(row.size(), exp_size);
-
+ 
+	    board_now = stof(row[1]); 
             new_TStamp = stof(row[0]); 
             
-            if (new_TStamp != old_TStamp){ // event is different OR first one, update old_TStamp
-                if (old_TStamp != -1){ // event is different: fill tree and LATER fill v
-                    v.hits = hit;
+            if ((new_TStamp-old_TStamp)*(new_TStamp-old_TStamp)>TStamp_cut*TStamp_cut){ // event is different OR first one, update old_TStamp
+                if (hit_tot>0){ // event is different: fill tree and LATER fill v
+                    v.hits = hit; // hits updated separately from fill_data_var for manual evaluation
                     tr_data->Fill();
                     hit = 0;
+                    memset(hit_frag_timing, 0, NBOARDS*sizeof(int));
                 }
                 old_TStamp = new_TStamp;
                 reset_stored_vars(v, acq_mod);  // RESET v and hit BEFORE FILLING AGAIN
-
+		v.TStamp = stod(row[0]); // TStamp updated separately from fill_data_var for compatibility w/ binary files
             }
-            fill_data_var(row, acq_mod, v, hit);
+            fill_data_var(row, acq_mod, v, hit_frag_timing[board_now]);
             //if (hit>=v.hits){throw runtime_error("Something went wrong with the counting of the number of hits.");}
-            hit++;        
-            
+            hit++;  
+            hit_tot++;
+            hit_frag_timing[board_now]++;      
         }
     } 
     
