@@ -1,4 +1,4 @@
-#define NBOARDS 2
+#define NBOARDS 1
 #define NCHANNELS 64
 #define MAXHITS 100
 
