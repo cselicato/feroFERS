@@ -14,7 +14,8 @@ modes find_mode(const TString& str) {
     if (str == "Timing_CStop"){cout << "Acquisition mode is: Timing_CStop. Set to Timing."<<endl;  return modes::Timing;}    
     if (str == "Spect_Timing"){cout << "Acquisition mode is: Spect_Timing."<<endl;  return modes::Spect_Timing;}
     if (str == "Counting"){cout << "Acquisition mode is: Counting."<<endl;  return modes::Counting;}
-
+    if (str == "Timing"){cout << "Acquisition mode is: Timing."<<endl;  return modes::Spect_Timing;}
+    
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
 

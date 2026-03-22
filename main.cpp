@@ -13,12 +13,16 @@ static char args_doc[] = "inputFile";
 
 static struct argp_option options[] = {
   {"output", 'o', "FILE", 0, "Optional output file name"},
+  {"is-not-file-header", 'f', "BOOLEAN", 0, "Optional boolean for file header unavailability"},
+  {"input-ref-info", 'r', "FILE", 0, "Optional input file name for info (if is-file-header is used)"},
   { 0 }
 };
 
 struct arguments {
   string inFile;
   string outFile;
+  bool isNotFileHeader;
+  string inFileInfo;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
@@ -26,6 +30,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     switch (key) {
     case 'o':
         arguments->outFile = arg;
+        break;
+    case 'f':
+        arguments->isNotFileHeader = arg;
+	break;
+    case 'r':
+        arguments->inFileInfo = arg;
         break;
     case ARGP_KEY_ARG:
       switch (state->arg_num) {
@@ -66,6 +76,18 @@ int main(int argc, char* argv[]){
         cout << endl;
     }
 
+    if (not arguments.isNotFileHeader) {
+        arguments.isNotFileHeader = 0;
+        cout << "No file-header boolean provided or set to 0. Using: 0 " << endl;
+        cout << endl;
+    }
+
+    if (arguments.inFileInfo.empty()) {
+        arguments.inFileInfo = arguments.inFile;
+        cout << "No info reference input file provided. Using default: " << arguments.inFileInfo << endl;
+        cout << endl;
+    }
+
     if (arguments.outFile.substr(arguments.outFile.size()-5)!=".root") {
         cout << "Output file " << arguments.outFile << " is invalid: it must be a .root file." << endl;
         cout << endl;
@@ -77,10 +99,11 @@ int main(int argc, char* argv[]){
     TTree *tr_data = new TTree("datas","datas");
 
     // process binary files
+    cout << "Doing: " << arguments.inFile << endl;
     if (arguments.inFile.substr(arguments.inFile.size()-4)==".dat") {
         cout << "Input file is a binary file." << endl;
         try {
-            parse_bin(arguments.inFile,  tr_info, tr_data, v);
+	  parse_bin(arguments.inFile, arguments.isNotFileHeader, arguments.inFileInfo, tr_info, tr_data, v);
         }
         catch(const exception& e){
             cerr << e.what() << '\n';

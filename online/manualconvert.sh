@@ -47,7 +47,7 @@ echo "---"
 # )
 # ---------------
 runarray=(  # set run numbers here
-Run1_list
+Run17
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -67,13 +67,31 @@ for run in "${runarray[@]}" ; do
     echo "---"
 
     # work on the run - core operations are performed in here
-    if [ $LATEST -eq 0 ] ; then
-	echo $INPATH/$run.$INFMT
-        ./main $INPATH/$run$INFMT --output $OUTPATH/$run.root ###$RESET
-    else
-        LATESTNAME=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
-        ./main $INPATH/$LATESTNAME --output $OUTPATH/${LATESTNAME::-4}.root ###$RESET
-    fi
+    #endfilenrs=0
+    endfilenrs=20
+    for filenr in $(seq 0 $endfilenrs) ; do
+        if [ $LATEST -eq 0 ] ; then
+            finalname=$run
+	else
+            latestname0=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
+   
+            #finalname=${latestname0::-9}
+            if [ $filenr -lt 10 ] ; then
+                limnamestr=11
+	    else
+	        limnamestr=12
+	    fi
+	    finalname=${latestname0::-$limnamestr}
+        fi
+
+	if [ $filenr -eq 0 ] ; then
+            #./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname.root
+            ./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr.root ###$RESET
+	else
+	    #./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname.root
+	    ./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr.root --is-not-file-header 1 --input-ref-info $OUTPATH/${finalname}_0.root ###$RESET
+	fi
+    done
 
     echo "---"
     
