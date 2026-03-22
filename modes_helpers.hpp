@@ -46,6 +46,9 @@ class stored_vars
     uint64_t Trg_Id;   
     uint64_t ch_mask;     
     Int_t hits;
+    TString * p_file_format = &this->file_format;
+    TString * p_janus_rel = &this->janus_rel;
+    TString * p_acq_mode = &this->acq_mode;
     
     // only the 2D and 3D variables need to have a different type than the one read in the binary file
     int16_t data_type[NBOARDS][NCHANNELS];
@@ -88,3 +91,4 @@ modes find_mode(uint8_t acq_mode);
 void reset_stored_vars(stored_vars &v, modes &mode);
 TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v);
 TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v);
+TTree * open_branches_info(TTree * t, const modes& mode, stored_vars &v);

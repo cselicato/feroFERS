@@ -41,7 +41,10 @@ void fill_data_var(EHEADER &eh, stored_vars &v){
     v.ch_mask = eh.ch_mask; 
 }
 
-int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr_info,TTree * tr_data, stored_vars &v){
+int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr_info, TTree * tr_data, stored_vars &v){
+
+    bool isFileHeader = not isNotFileHeader;
+  
     // open file
     fstream file(inFile, ios::in|ios::binary|ios::ate);
     if (!file) {
@@ -56,14 +59,13 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
     T_EHEADER t_eh;
     EDATA event;
     read_vars r;
-
-    bool isFileHeader = not isNotFileHeader;
     
     // start reading file
     // read file header (exactly the same for each acquisition mode)
     modes acq_mod;
     TTree* tr_info_ref;
     TFile * fileinfo = nullptr;
+    TString * leaf_info_ref = nullptr;
     if(isFileHeader){
         file.read(reinterpret_cast<char*>(&fh), sizeof(FHEADER));
         acq_mod = find_mode(fh.acq_mode);
@@ -74,14 +76,19 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             return 0;
         }
 	tr_info_ref=(TTree*)fileinfo->Get("info");
-	TString * leaf_info_ref = nullptr;
 	tr_info_ref->SetBranchAddress("acq_mode", &leaf_info_ref);
 	tr_info_ref->GetEntry(0);
         acq_mod = find_mode( *leaf_info_ref );
     }
 	
     // make trees' branches
-    make_branches_info(tr_info, acq_mod, v);
+    stored_vars v_ref;
+    if(isFileHeader){
+        make_branches_info(tr_info, acq_mod, v);
+    }else{
+        make_branches_info(tr_info, acq_mod, v_ref);
+	open_branches_info(tr_info_ref, acq_mod, v_ref);
+    }
     make_branches_data(tr_data, acq_mod, v);
 
     // fill variables that need to be stored in the info tree
@@ -89,8 +96,9 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
         fill_info_var(fh, v, acq_mod);
         tr_info->Fill();
     }else{
-        tr_info = tr_info_ref->CloneTree(0);
-        tr_info->CopyEntries(tr_info_ref);
+	tr_info_ref->GetEntry(0);
+	v_ref.acq_mode= *leaf_info_ref;
+	tr_info->Fill();
 	fileinfo->Close();
     }
 	

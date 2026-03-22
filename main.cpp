@@ -95,6 +95,7 @@ int main(int argc, char* argv[]){
     }
 
     stored_vars v;
+    //TFile fout(arguments.outFile.c_str(), "recreate");
     TTree *tr_info = new TTree("info","info");
     TTree *tr_data = new TTree("datas","datas");
 
@@ -114,7 +115,7 @@ int main(int argc, char* argv[]){
     else {
         cout << "Input file is a CSV file." << endl;
         try {
-            parse_csv(arguments.inFile, tr_info, tr_data,v);
+            parse_csv(arguments.inFile, arguments.isNotFileHeader, arguments.inFileInfo, tr_info, tr_data, v);
         }
         catch(const exception& e){
             cerr << e.what() << '\n';

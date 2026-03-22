@@ -152,8 +152,10 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
 }
 
 
-int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
+int parse_csv(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr_info,TTree * tr_data, stored_vars &v){
 
+    bool isFileHeader = not isNotFileHeader;
+  
     // open file
     fstream file(inFile, ios::in);
     if (!file) {
@@ -162,45 +164,81 @@ int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v){
 
     cout << "Opened file: " << inFile << endl;
 
-    // get metadata
-    string line;
+    modes acq_mod;
+    TTree* tr_info_ref;
+    TFile * fileinfo = nullptr;
+    TString * leaf_info_ref = nullptr;
+
     vector<vector<string>> metadata;
+    string line;
     vector<string> col_names;
-    file.clear();
-    file.seekg(0);
-    while (getline(file, line)){
-        if (line.empty()==false){
+    int exp_size;
+    
+    if(isFileHeader){
+    
+        // get metadata
+        file.clear();
+        file.seekg(0);
+        while (getline(file, line)){
+            if (line.empty()==false){
             
-            if (line.back() == '\r'){ // if present, remove CR
-                line.pop_back();    }
+                if (line.back() == '\r'){ // if present, remove CR
+                    line.pop_back();    }
 
-            if (line[2] == '*'){
-                continue;   }
+                if (line[2] == '*'){
+                    continue;   }
 
-            else if (line[0] == '/'){
-                vector<string> row = split_line(line, ':');
-                metadata.push_back(row); 
+                else if (line[0] == '/'){
+                    vector<string> row = split_line(line, ':');
+                    metadata.push_back(row); 
 
+                }
+                else {
+                    col_names = split_line(line, ',');
+                    break;    }
             }
-            else {
-                col_names = split_line(line, ',');
-                break;    }
-        }
-    } 
-    cout << "Done reading metadata." << endl;
+        } 
+        cout << "Done reading metadata." << endl;
 
-    int exp_size = col_names.size(); // expected size of the rows in the CSV file
-    // find acquisition mode
-    modes acq_mod = find_mode(metadata[3][1]);
+        exp_size = col_names.size(); // expected size of the rows in the CSV file
+        // find acquisition mode
+        acq_mod = find_mode(metadata[3][1]);
+	
+    }else{
+      
+        fileinfo = new TFile(inFileInfo.c_str(), "read");
+        if (!fileinfo || fileinfo->IsZombie()) {
+            cerr << "Unable to open ROOT info reference file." << endl;
+            return 0;
+        }
+        tr_info_ref=(TTree*)fileinfo->Get("info");
+        tr_info_ref->SetBranchAddress("acq_mode", &leaf_info_ref);
+        tr_info_ref->GetEntry(0);
+        acq_mod = find_mode( *leaf_info_ref );
+
+    }
 
     // make trees' branches
-    make_branches_info(tr_info, acq_mod, v);
+    stored_vars v_ref;
+    if(isFileHeader){
+        make_branches_info(tr_info, acq_mod, v);
+    }else{
+        make_branches_info(tr_info, acq_mod, v_ref);
+        open_branches_info(tr_info_ref, acq_mod, v_ref);
+    }
     make_branches_data(tr_data, acq_mod, v);
-
+    
     // fill variables that need to be stored in the info tree
-    fill_info_var(metadata, acq_mod, v);
-    tr_info->Fill();
-
+    if(isFileHeader){
+        fill_info_var(metadata, acq_mod, v);
+        tr_info->Fill();
+    }else{
+        tr_info_ref->GetEntry(0);
+        v_ref.acq_mode= *leaf_info_ref;
+        tr_info->Fill();
+        fileinfo->Close();
+    }
+	
     // read the events
     float new_TStamp = 0;
     float TStamp_cut = (v.time_unit=="ns") ? 1 : 2 ; // TStamp separation threshold in ns : LSB;

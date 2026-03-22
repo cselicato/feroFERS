@@ -93,6 +93,41 @@ TTree * make_branches_info(TTree * t, const modes& mode, stored_vars &v){
     return t;
 }
 
+TTree * open_branches_info(TTree * t, const modes& mode, stored_vars &v){
+    // create common branches
+    t->SetBranchAddress("n_boards", &v.n_boards);
+    t->SetBranchAddress("n_channels", &v.n_channels);
+    t->SetBranchAddress("max_hits", &v.max_hits);
+    t->SetBranchAddress("board_mod", &v.board_mod);
+    t->SetBranchAddress("file_format", &v.p_file_format);
+    t->SetBranchAddress("janus_rel", &v.p_janus_rel);
+    t->SetBranchAddress("acq_mode", &v.p_acq_mode);
+    t->SetBranchAddress("run", &v.run);
+    t->SetBranchAddress("time_epoch", (ULong64_t*)&v.time_epoch);
+    t->SetBranchAddress("time_UTC", &v.time_UTC);
+    switch (mode) {
+        case modes::Spectroscopy:
+            t->SetBranchAddress("e_Nbins", &v.e_Nbins);
+            break;
+
+        case modes::Spect_Timing:
+            t->SetBranchAddress("e_Nbins", &v.e_Nbins);
+            t->SetBranchAddress("time_LSB_ns", &v.time_conv);
+            t->SetBranchAddress("time_unit", &v.time_unit);
+            break;
+
+        case modes::Timing:
+            t->SetBranchAddress("time_LSB_ns", &v.time_conv);
+            t->SetBranchAddress("time_unit", &v.time_unit);
+            break;
+
+        case modes::Counting:
+            break;
+
+    }
+    return t;
+}
+
 TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
     t->Branch("TStamp_us",&v.TStamp, "TStamp_us/D");
     t->Branch("Num_Hits",&v.hits, "Num_Hits/I");

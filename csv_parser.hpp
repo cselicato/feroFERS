@@ -14,4 +14,4 @@ vector<string> split_line(string line, char delimiter);
 void is_consistent(int size, int exp_size);
 void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit);
 void fill_info_var(vector<vector<string>> &metadata, modes &mode, stored_vars &v);
-int parse_csv(string inFile, TTree * tr_info,TTree * tr_data, stored_vars &v);
+int parse_csv(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr_info, TTree * tr_data, stored_vars &v);
