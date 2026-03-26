@@ -216,6 +216,7 @@ int parse_csv(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
         tr_info_ref=(TTree*)fileinfo->Get("info");
         tr_info_ref->SetBranchAddress("acq_mode", &leaf_info_ref);
         tr_info_ref->GetEntry(0);
+	exp_size = tr_info_ref->GetNbranches() - 2; // manually correcting for fSec, fNanoSec
         acq_mod = find_mode( *leaf_info_ref );
 
     }

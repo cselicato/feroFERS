@@ -1,5 +1,5 @@
-#define NBOARDS 1
-#define NCHANNELS 64
+#define NBOARDS 4
+#define NCHANNELS 256
 #define MAXHITS 100
 
 #include <stdio.h>

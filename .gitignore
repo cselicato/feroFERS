@@ -60,3 +60,6 @@ test_files/*
 .vscode
 main
 */main
+
+*.~
+#*#
