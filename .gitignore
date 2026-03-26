@@ -61,5 +61,6 @@ test_files/*
 main
 */main
 
-*.~
+*~
 #*#
+*/#*#

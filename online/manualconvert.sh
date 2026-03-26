@@ -54,7 +54,8 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-    Run46
+Run52
+Run55
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -74,8 +75,8 @@ for run in "${runarray[@]}" ; do
     echo "---"
 
     # work on the run - core operations are performed in here
-    #endfilenrs=0
-    endfilenrs=20
+    endfilenrs=0
+    #endfilenrs=20
     for filenr in $(seq 0 $endfilenrs) ; do  # loop is needed for multi-file runs, in case of single-file (uncomment the proper lines below) same action is repeated for endfilenrs times (can be set to 1 in that case)
         if [ $LATEST -eq 0 ] ; then
             finalname=$run
@@ -92,11 +93,11 @@ for run in "${runarray[@]}" ; do
         fi
 
 	if [ $filenr -eq 0 ] ; then
-            #./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root  # uncomment for single-file runs
-            ./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root ###$RESET
+            ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root  # uncomment for single-file runs
+            #./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root ###$RESET
 	else
-	    #./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root  # uncomment for single-file runs
-	    ./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root --is-not-file-header 1 --input-ref-info $OUTPATH/${finalname}_0$INFMT.root ###$RESET
+	    ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root  # uncomment for single-file runs
+	    #./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root --is-not-file-header 1 --input-ref-info $OUTPATH/${finalname}_0$INFMT.root ###$RESET
 	fi
     done
 

@@ -43,7 +43,8 @@ class EHEADER {
     double TStamp;          // double 64 
     uint64_t Trg_Id;        // int 64 bit
     uint64_t ch_mask;        // int 64 bit
-
+    uint16_t nhitsembedded;  // int 16 bit
+  
     int get_mask_hits() const {
         return __builtin_popcountll(ch_mask);}
 };
