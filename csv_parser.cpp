@@ -81,6 +81,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
 
     switch (mode) {
         case modes::Spectroscopy:
+
             v.Trg_Id = stoi(row[1]);
             v.TStamp = stod(row[0]);
             //v.hits = stoi(row[3]);
@@ -98,6 +99,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             break;
 
         case modes::Timing:
+
             //v.TStamp = stod(row[0]);
             //v.hits = stoi(row[2]);
 
@@ -124,7 +126,7 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             ch_ID = stoi(row[5]); 
 
             is_valid_ind(board, ch_ID);      
-            
+
             v.data_type[board][ch_ID] = stoi(row[6], nullptr, 16);
             v.LG[board][ch_ID] = stoi(row[7]);
             v.HG[board][ch_ID] = stoi(row[8]);
@@ -240,10 +242,9 @@ int parse_csv(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
     }
 	
     // read the events
-    float new_TStamp = 0;
-    float TStamp_cut = (v.time_unit=="ns") ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
-    float old_TStamp = -2*TStamp_cut; // used in all data modes
-
+    double new_TStamp = 0;
+    double TStamp_cut = (v.time_unit=="ns") ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
+    double old_TStamp = -2*TStamp_cut; // used in all data modes
     int board_now;
 
     int hit=0, hit_tot=0;
@@ -257,9 +258,9 @@ int parse_csv(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             vector<string> row = split_line(line, ',');
             is_consistent(row.size(), exp_size);
  
-	    board_now = stof(row[1]); 
-            new_TStamp = stof(row[0]); 
-            
+	    board_now = (acq_mod==modes::Timing) ? stoi(row[1]) : stoi(row[2]); 
+            new_TStamp = stod(row[0]); 
+
             if ((new_TStamp-old_TStamp)*(new_TStamp-old_TStamp)>TStamp_cut*TStamp_cut){ // event is different OR first one, update old_TStamp
                 if (hit_tot>0){ // event is different: fill tree and LATER fill v
                     v.hits = hit; // hits updated separately from fill_data_var for manual evaluation
@@ -271,6 +272,7 @@ int parse_csv(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 reset_stored_vars(v, acq_mod);  // RESET v and hit BEFORE FILLING AGAIN
 		v.TStamp = stod(row[0]); // TStamp updated separately from fill_data_var for compatibility w/ binary files
             }
+
             fill_data_var(row, acq_mod, v, hit_frag_timing[board_now]);
             //if (hit>=v.hits){throw runtime_error("Something went wrong with the counting of the number of hits.");}
             hit++;  

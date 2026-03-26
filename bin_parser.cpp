@@ -107,8 +107,8 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
 
     int ifrag = 0;
     int old_Trg_Id = -1;
-    float TStamp_cut = (fh.time_unit&0x1) ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
-    float old_TStamp = -2*TStamp_cut; // only used in timing, other modes use Trg_Id
+    double TStamp_cut = (fh.time_unit&0x1) ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
+    double old_TStamp = -2*TStamp_cut; // only used in timing, other modes use Trg_Id
     
     int hits, hits_frag_timing;
 
@@ -293,7 +293,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 ifrag++;
             }
             
-		    //special update/fill for last event
+            //special update/fill for last event
             v.hits = hits;
             tr_data->Fill();
             
@@ -304,25 +304,40 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 ev_start = file.tellg();
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
-                // READ EVENT DATA
-                hits = 0;
-                reset_stored_vars(v, acq_mod);
+                
+                // if there is a new Trg_Id...
+                if (eh.Trg_Id!=old_Trg_Id){
+                    
+                    // if this is not the first event read, finalise the stored_data object and fill the tree
+                    if (ifrag>0){
+                        v.hits = hits;
+                        tr_data->Fill();
+                    }
+                    
+                    // in any case, updateold_Trg_Id, reset hit count and update/reset various datas entries
+                    old_Trg_Id = eh.Trg_Id;
+                    hits = 0;
+                    reset_stored_vars(v, acq_mod);
+                    fill_data_var(eh, v);
+                }
 
+                // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&r.ch_Id), sizeof(uint8_t));
                     file.read(reinterpret_cast<char*>(&r.counts), sizeof(uint64_t));
 
-                    is_valid_ind(eh.board_Id, event.ch_Id);
+                    is_valid_ind(eh.board_Id, r.ch_Id);
 
                     v.counts[eh.board_Id][r.ch_Id] = (int64_t)r.counts;
                     hits++;
                 }
-
-                fill_data_var(eh, v);
-                v.hits = hits;
-
-                tr_data->Fill();
+                ifrag++;
             }
+            
+            //special update/fill for last event
+            v.hits = hits;
+            tr_data->Fill();
+            
             break;
         }
 
