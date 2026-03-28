@@ -1,5 +1,9 @@
 #!/bin/bash
 
+##########
+# no arguments, simply run ./fF_recompiledaq.sh
+##########
+
 echo "Recompiling program in"
 echo "$(pwd)"
 

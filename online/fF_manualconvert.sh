@@ -1,5 +1,12 @@
 #!/bin/bash
 
+##########
+# example:
+# ./fF_manualconvert.sh /eos/experiment/newtile/beamtests/26_05_t10/fers_daq/bin/DataFiles 1 /eos/experiment/newtile/beamtests/26_05_t10/fers_root/splitted/ 0 0
+##########
+
+multifile=0 # set here whether the acquisition mode is single-file (0) or multi-file (1)
+
 # argument 1: path to input data (mandatory)
 INPATH=$1
 
@@ -15,9 +22,9 @@ OUTPATH=${3:-$outpathdefault}
 latestdefault=0
 LATEST=${4:-$latestdefault} 
 
-#### argument 4: erase and redo whole run (0) or keep existing files (1)?
-###resetdefault=0
-###RESET=${4:-$resetdefault}
+# argument 5: erase and redo whole run (0) or keep existing files (1)?
+resetdefault=0
+RESET=${5:-$resetdefault}
 
 if [ $IDINFMT -eq 0 ] ; then
     INFMT=.dat
@@ -54,8 +61,7 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-Run52
-Run55
+    Run50
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -73,10 +79,13 @@ for run in "${runarray[@]}" ; do
     fi
 
     echo "---"
-
+    
     # work on the run - core operations are performed in here
-    endfilenrs=0
-    #endfilenrs=20
+    if [ $multifile -eq 0 ] ; then
+        endfilenrs=0
+    else
+        endfilenrs=10  # set here the max nr of files in the multi-file case 
+    fi
     for filenr in $(seq 0 $endfilenrs) ; do  # loop is needed for multi-file runs, in case of single-file (uncomment the proper lines below) same action is repeated for endfilenrs times (can be set to 1 in that case)
         if [ $LATEST -eq 0 ] ; then
             finalname=$run
@@ -92,12 +101,26 @@ for run in "${runarray[@]}" ; do
 	    finalname=${latestname0::-$limnamestr}
         fi
 
+	# if requested, erase already created file (same run, same format) and redo it
+	if [ $RESET -eq 1 ] ; then
+	    if [ -f $OUTPATH/$finalname$INFMT.root ] ; then
+	        echo "File already esists, moving on..."
+	        continue
+	    fi
+	fi
+
 	if [ $filenr -eq 0 ] ; then
-            ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root  # uncomment for single-file runs
-            #./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root ###$RESET
+	    if [ $multifile -eq 0 ] ; then
+                ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root
+	    else
+		./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root
+	    fi
 	else
-	    ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root  # uncomment for single-file runs
-	    #./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root --is-not-file-header 1 --input-ref-info $OUTPATH/${finalname}_0$INFMT.root ###$RESET
+	    if [ $multifile -eq 0 ] ; then
+	        ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root
+	    else
+	        ./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root --is-not-file-header 1 --input-ref-info $OUTPATH/${finalname}_0$INFMT.root
+	    fi
 	fi
     done
 
