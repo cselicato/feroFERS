@@ -5,7 +5,7 @@
 # ./fF_manualconvert.sh /eos/experiment/newtile/beamtests/26_05_t10/fers_daq/bin/DataFiles 1 /eos/experiment/newtile/beamtests/26_05_t10/fers_root/splitted/ 0 0
 ##########
 
-multifile=0 # set here whether the acquisition mode is single-file (0) or multi-file (1)
+multifile=1 # set here whether the acquisition mode is single-file (0) or multi-file (1)
 
 # argument 1: path to input data (mandatory)
 INPATH=$1
@@ -61,7 +61,7 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-    Run50
+    Run58
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -84,7 +84,7 @@ for run in "${runarray[@]}" ; do
     if [ $multifile -eq 0 ] ; then
         endfilenrs=0
     else
-        endfilenrs=10  # set here the max nr of files in the multi-file case 
+        endfilenrs=20  # set here the max nr of files in the multi-file case 
     fi
     for filenr in $(seq 0 $endfilenrs) ; do  # loop is needed for multi-file runs, in case of single-file (uncomment the proper lines below) same action is repeated for endfilenrs times (can be set to 1 in that case)
         if [ $LATEST -eq 0 ] ; then

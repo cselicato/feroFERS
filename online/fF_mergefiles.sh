@@ -25,5 +25,4 @@ else
     INFMT=.csv
 fi
 
-#echo $(find $INPATH -name "Run${RUNNR}_*$INFMT.root")
-hadd -f $OUTPATH/Run$RUNNR$INFMT.root $(find $INPATH -name "Run${RUNNR}_*$INFMT.root")
+hadd -f $OUTPATH/Run$RUNNR$INFMT.root $(find $INPATH -name "Run${RUNNR}_*$INFMT.root" | sort -V)
