@@ -61,7 +61,23 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-    Run58
+    Run279
+    Run280
+    Run290
+    Run291
+    Run292
+    Run283
+    Run286
+    Run288
+    Run289
+    Run293
+    Run305
+    Run306
+    Run307
+    Run309
+    Run310
+    Run308
+    Run311
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -84,7 +100,7 @@ for run in "${runarray[@]}" ; do
     if [ $multifile -eq 0 ] ; then
         endfilenrs=0
     else
-        endfilenrs=20  # set here the max nr of files in the multi-file case 
+        endfilenrs=$(ls -1 $INPATH | grep $run | grep $INFMT | wc -l)
     fi
     for filenr in $(seq 0 $endfilenrs) ; do  # loop is needed for multi-file runs, in case of single-file (uncomment the proper lines below) same action is repeated for endfilenrs times (can be set to 1 in that case)
         if [ $LATEST -eq 0 ] ; then
