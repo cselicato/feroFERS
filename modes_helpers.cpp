@@ -113,12 +113,12 @@ TTree * open_branches_info(TTree * t, const modes& mode, stored_vars &v){
         case modes::Spect_Timing:
             t->SetBranchAddress("e_Nbins", &v.e_Nbins);
             t->SetBranchAddress("time_LSB_ns", &v.time_conv);
-            t->SetBranchAddress("time_unit", &v.time_unit);
+            t->SetBranchAddress("time_unit", &v.p_time_unit);
             break;
 
         case modes::Timing:
             t->SetBranchAddress("time_LSB_ns", &v.time_conv);
-            t->SetBranchAddress("time_unit", &v.time_unit);
+            t->SetBranchAddress("time_unit", &v.p_time_unit);
             break;
 
         case modes::Counting:
@@ -152,6 +152,7 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
         
 
         case modes::Spect_Timing:
+	  //t->Branch("dTRef", &v.dTRef, "dTRef/D");
             t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
             t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
             t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",NBOARDS));

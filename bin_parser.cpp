@@ -40,6 +40,12 @@ void fill_data_var(EHEADER &eh, stored_vars &v){
     v.Trg_Id = eh.Trg_Id;   
     v.ch_mask = eh.ch_mask; 
 }
+void fill_data_var(EHEADER_ST &eh, stored_vars &v){
+    v.TStamp = eh.TStamp;
+    //v.dTRef = eh.dTRef;
+    v.Trg_Id = eh.Trg_Id;
+    v.ch_mask = eh.ch_mask;
+}
 
 int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr_info, TTree * tr_data, stored_vars &v){
 
@@ -56,6 +62,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
 
     FHEADER fh;
     EHEADER eh;
+    EHEADER_ST eh_st;
     T_EHEADER t_eh;
     EDATA event;
     read_vars r;
@@ -118,7 +125,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 ev_start = file.tellg();
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
-                
+		
                 // if there is a new Trg_Id...
                 if (eh.Trg_Id!=old_Trg_Id){
                     
@@ -152,10 +159,10 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                         v.HG[eh.board_Id][event.ch_Id] = r.HG;
                     }
                     hits++;
-                }
+	        }
                 ifrag++;
             }
-            
+	    
             //special update/fill for last event
             v.hits = hits;
             tr_data->Fill();
@@ -230,10 +237,10 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             while(file.tellg()<file_size){
                 ev_start = file.tellg();
                 // READ EVENT HEADER
-                file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
+                file.read(reinterpret_cast<char*>(&eh_st), sizeof(EHEADER_ST));
 
                 // if there is a new Trg_Id...
-                if (eh.Trg_Id!=old_Trg_Id){
+                if (eh_st.Trg_Id!=old_Trg_Id){
                     
                     // if this is not the first event read, finalise the stored_data object and fill the tree
                     if (ifrag>0){
@@ -242,57 +249,56 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                     }
                     
                     // in any case, updateold_Trg_Id, reset hit count and update/reset various datas entries
-                    old_Trg_Id = eh.Trg_Id;
+                    old_Trg_Id = eh_st.Trg_Id;
                     hits = 0;
                     reset_stored_vars(v, acq_mod);
-                    fill_data_var(eh, v);
+                    fill_data_var(eh_st, v);
                 }
 
                 // READ EVENT DATA
-                while (file.tellg()<(eh.ev_size+ev_start)){
+                while (file.tellg()<(eh_st.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
+		    
+                    is_valid_ind(eh_st.board_Id, event.ch_Id);
 
-                    is_valid_ind(eh.board_Id, event.ch_Id);
-
-                    v.data_type[eh.board_Id][event.ch_Id] = event.data_type;
+                    v.data_type[eh_st.board_Id][event.ch_Id] = event.data_type;
                        
                     // PHA information
                     if(event.data_type&0x1){ // LG amplitude saved
                         file.read(reinterpret_cast<char*>(&r.LG), sizeof(r.LG));
-                        v.LG[eh.board_Id][event.ch_Id] = (int32_t)r.LG;
+                        v.LG[eh_st.board_Id][event.ch_Id] = (int32_t)r.LG;
                     }
                     if(event.data_type&0x2){ // HG amplitude saved
                         file.read(reinterpret_cast<char*>(&r.HG), sizeof(r.HG));
-                        v.HG[eh.board_Id][event.ch_Id] = (int32_t)r.HG;
+                        v.HG[eh_st.board_Id][event.ch_Id] = (int32_t)r.HG;
                     }
                     
                     // timing information
                     if(fh.time_unit&0x1){ // times are saved as ns
                         if(event.data_type&0x10){ // ToA saved
                             file.read(reinterpret_cast<char*>(&r.ToA_ns), sizeof(float));
-                            v.ToA[eh.board_Id][event.ch_Id] = (float)r.ToA_ns;
+                            v.ToA[eh_st.board_Id][event.ch_Id] = (float)r.ToA_ns;
 
                         }
                         if(event.data_type&0x20){ // ToT saved
                             file.read(reinterpret_cast<char*>(&r.ToT_ns), sizeof(float));
-                            v.ToT[eh.board_Id][event.ch_Id] = (float)r.ToT_ns;
+                            v.ToT[eh_st.board_Id][event.ch_Id] = (float)r.ToT_ns;
                         }
                     }
                     else{ // times are saved as LSB
                         if(event.data_type&0x10){ // ToA saved
                             file.read(reinterpret_cast<char*>(&r.ToA_LSB), sizeof(r.ToA_LSB));
-                            v.ToA[eh.board_Id][event.ch_Id] = (float)r.ToA_LSB;
+                            v.ToA[eh_st.board_Id][event.ch_Id] = (float)r.ToA_LSB;
                         }
                         if(event.data_type&0x20){ // ToT saved
                             file.read(reinterpret_cast<char*>(&r.ToT_LSB), sizeof(r.ToT_LSB));
-                            v.ToT[eh.board_Id][event.ch_Id] = (float)r.ToT_LSB;
+                            v.ToT[eh_st.board_Id][event.ch_Id] = (float)r.ToT_LSB;
                         }
                     }
                     hits++;
                 }
-                ifrag++;
+		ifrag++;
             }
-            
             //special update/fill for last event
             v.hits = hits;
             tr_data->Fill();

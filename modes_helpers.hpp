@@ -42,13 +42,15 @@ class stored_vars
     TTimeStamp * time_UTC;
     TString time_unit;
     // data
-    Double_t TStamp;    
+    Double_t TStamp;
+  //Double_t dTRef;
     uint64_t Trg_Id;   
     uint64_t ch_mask;     
     Int_t hits;
     TString * p_file_format = &this->file_format;
     TString * p_janus_rel = &this->janus_rel;
     TString * p_acq_mode = &this->acq_mode;
+    TString * p_time_unit = &this->time_unit;
     
     // only the 2D and 3D variables need to have a different type than the one read in the binary file
     int16_t data_type[NBOARDS][NCHANNELS];

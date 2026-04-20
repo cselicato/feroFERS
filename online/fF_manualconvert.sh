@@ -61,23 +61,23 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-    Run279
-    Run280
-    Run290
-    Run291
-    Run292
-    Run283
-    Run286
-    Run288
-    Run289
-    Run293
     Run305
-    Run306
-    Run307
-    Run309
-    Run310
-    Run308
-    Run311
+Run306
+Run307
+Run309
+Run310
+Run308
+Run311
+Run279
+Run280
+Run290
+Run291
+Run292
+Run283
+Run286
+Run288
+Run289
+Run293
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -100,28 +100,44 @@ for run in "${runarray[@]}" ; do
     if [ $multifile -eq 0 ] ; then
         endfilenrs=0
     else
-        endfilenrs=$(ls -1 $INPATH | grep $run | grep $INFMT | wc -l)
+	if [ $LATEST -eq 0 ] ; then
+            endfilenrs=$(ls -1 $INPATH | grep $run | grep $INFMT | wc -l)
+	else
+	    latestrun=$(ls -1rt $INPATH | grep .0_list$INFMT | tail -n 1 | sed -e "s/\(.*\).0_list$INFMT/\1/")
+	    endfilenrs=$(ls -1 $INPATH | grep $latestrun | grep $INFMT | wc -l)
+	fi
     fi
     for filenr in $(seq 0 $endfilenrs) ; do  # loop is needed for multi-file runs, in case of single-file (uncomment the proper lines below) same action is repeated for endfilenrs times (can be set to 1 in that case)
         if [ $LATEST -eq 0 ] ; then
             finalname=$run
 	else
             latestname0=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
-   
-            #finalname=${latestname0::-9}
             if [ $filenr -lt 10 ] ; then
                 limnamestr=11
-	    else
-	        limnamestr=12
+            elif [ $filenr -lt 100 ] ; then
+                limnamestr=12
+            elif [ $filenr -lt 1000 ] ; then
+                limnamestr=13
+	    elif [ $filenr -lt 10000 ] ; then
+	        limnamestr=14
+	    elif [ $filenr -lt 100000 ] ; then
+		limnamestr=15
 	    fi
 	    finalname=${latestname0::-$limnamestr}
         fi
 
 	# if requested, erase already created file (same run, same format) and redo it
 	if [ $RESET -eq 1 ] ; then
-	    if [ -f $OUTPATH/$finalname$INFMT.root ] ; then
-	        echo "File already esists, moving on..."
-	        continue
+	    if [ $multifile -eq 0 ] ; then
+	        if [ -f $OUTPATH/$finalname$INFMT.root ] ; then
+	            echo "File already esists, moving on..."
+	            continue
+	        fi
+	    else
+	        if [ -f $OUTPATH/${finalname}_$filenr$INFMT.root ] ; then
+                    echo "File already esists, moving on..."
+                    continue
+                fi
 	    fi
 	fi
 

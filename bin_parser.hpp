@@ -33,7 +33,7 @@ public:
 #pragma pack(pop)
 
 /**
- * Class for the event header for the spectroscopy, spec+timing and counting modes
+ * Class for the event header for the spectroscopy and counting modes
  */
 #pragma pack(push, 1)
 class EHEADER {
@@ -45,6 +45,25 @@ class EHEADER {
     uint64_t ch_mask;        // int 64 bit
     uint16_t nhitsembedded;  // int 16 bit
   
+    int get_mask_hits() const {
+        return __builtin_popcountll(ch_mask);}
+};
+#pragma pack(pop)
+
+/**
+ * Class for the event header for the spec+timing
+ */
+#pragma pack(push, 1)
+class EHEADER_ST {
+    public:
+    uint16_t ev_size;        // int 16 bit
+    uint8_t board_Id;       // int 8 bit
+    double TStamp;          // double 64
+    uint64_t dTRef;           // double 64
+    uint64_t Trg_Id;        // int 64 bit
+    uint64_t ch_mask;        // int 64 bit
+    uint16_t nhitsembedded;  // int 16 bit
+
     int get_mask_hits() const {
         return __builtin_popcountll(ch_mask);}
 };
