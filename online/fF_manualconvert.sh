@@ -5,8 +5,6 @@
 # ./fF_manualconvert.sh /eos/experiment/newtile/beamtests/26_05_t10/fers_daq/bin/DataFiles 1 /eos/experiment/newtile/beamtests/26_05_t10/fers_root/splitted/ 0 0
 ##########
 
-multifile=1 # set here whether the acquisition mode is single-file (0) or multi-file (1)
-
 # argument 1: path to input data (mandatory)
 INPATH=$1
 
@@ -25,6 +23,14 @@ LATEST=${4:-$latestdefault}
 # argument 5: erase and redo whole run (0) or keep existing files (1)?
 resetdefault=0
 RESET=${5:-$resetdefault}
+
+# argument 6: multi-file (1) or single-file (0) format?
+multifiledefault=1
+MULTIFILE=${6:-$multifiledefault}
+
+# argument 7: if LATEST (argument 4) is not 0 and this is not -1, this will be the run nr that will be processed (e.g Run123)
+overriderundefault=RunX
+OVERRIDERUN=${7:-$overriderundefault}
 
 if [ $IDINFMT -eq 0 ] ; then
     INFMT=.dat
@@ -61,7 +67,7 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-    Run305
+Run305
 Run306
 Run307
 Run309
@@ -91,64 +97,80 @@ for run in "${runarray[@]}" ; do
     if [ $LATEST -eq 0 ] ; then
         echo "Iteration on run $run"
     else
-        echo "Iteration on latest run"
+	if [ "$OVERRIDERUN" = "RunX" ] ; then
+            echo "Iteration on latest run"
+	else
+            echo "Iteration on selected run $OVERRIDERUN"
+	fi
     fi
 
     echo "---"
     
     # work on the run - core operations are performed in here
-    if [ $multifile -eq 0 ] ; then
+    if [ $MULTIFILE -eq 0 ] ; then
         endfilenrs=0
     else
 	if [ $LATEST -eq 0 ] ; then
             endfilenrs=$(ls -1 $INPATH | grep $run | grep $INFMT | wc -l)
 	else
-	    latestrun=$(ls -1rt $INPATH | grep .0_list$INFMT | tail -n 1 | sed -e "s/\(.*\).0_list$INFMT/\1/")
-	    endfilenrs=$(ls -1 $INPATH | grep $latestrun | grep $INFMT | wc -l)
+	    if [ "$OVERRIDERUN" = "RunX" ] ; then
+	        latestrun=$(ls -1rt $INPATH | grep .0_list$INFMT | tail -n 1 | sed -e "s/\(.*\).0_list$INFMT/\1/")
+	        endfilenrs=$(ls -1 $INPATH | grep $latestrun | grep $INFMT | wc -l)
+            else
+                endfilenrs=$(ls -1 $INPATH | grep $OVERRIDERUN | grep $INFMT | wc -l)
+	    fi
 	fi
     fi
-    for filenr in $(seq 0 $endfilenrs) ; do  # loop is needed for multi-file runs, in case of single-file (uncomment the proper lines below) same action is repeated for endfilenrs times (can be set to 1 in that case)
+    for filenr in $(seq 0 $endfilenrs) ; do  # loop is needed for multi-file runs, in case of single-file same action is repeated for endfilenrs times (set to 0 above)
         if [ $LATEST -eq 0 ] ; then
             finalname=$run
 	else
-            latestname0=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
-            if [ $filenr -lt 10 ] ; then
-                limnamestr=11
-            elif [ $filenr -lt 100 ] ; then
-                limnamestr=12
-            elif [ $filenr -lt 1000 ] ; then
-                limnamestr=13
-	    elif [ $filenr -lt 10000 ] ; then
-	        limnamestr=14
-	    elif [ $filenr -lt 100000 ] ; then
-		limnamestr=15
+	    if [ "$OVERRIDERUN" = "RunX" ] ; then
+                latestname0=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
+		if [ $MULTIFILE -eq 0 ] ; then
+                    if [ $filenr -lt 10 ] ; then
+                        limnamestr=11
+                    elif [ $filenr -lt 100 ] ; then
+                        limnamestr=12
+                    elif [ $filenr -lt 1000 ] ; then
+                        limnamestr=13
+                    elif [ $filenr -lt 10000 ] ; then
+	                limnamestr=14
+                    elif [ $filenr -lt 100000 ] ; then
+                        limnamestr=15
+                    fi
+		else
+                    limnamestr=9
+		fi
+	        finalname=${latestname0::-$limnamestr}
+	    else
+                finalname=$OVERRIDERUN
 	    fi
-	    finalname=${latestname0::-$limnamestr}
         fi
 
 	# if requested, erase already created file (same run, same format) and redo it
 	if [ $RESET -eq 1 ] ; then
-	    if [ $multifile -eq 0 ] ; then
+	    if [ $MULTIFILE -eq 0 ] ; then
 	        if [ -f $OUTPATH/$finalname$INFMT.root ] ; then
-	            echo "File already esists, moving on..."
+	            echo "File $finalname$INFMT.root already esists, moving on..."
 	            continue
 	        fi
 	    else
 	        if [ -f $OUTPATH/${finalname}_$filenr$INFMT.root ] ; then
-                    echo "File already esists, moving on..."
+                    echo "File ${finalname}_$filenr$INFMT.root already esists, moving on..."
                     continue
                 fi
 	    fi
 	fi
 
 	if [ $filenr -eq 0 ] ; then
-	    if [ $multifile -eq 0 ] ; then
+	    if [ $MULTIFILE -eq 0 ] ; then
                 ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root
 	    else
 		./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root
 	    fi
 	else
-	    if [ $multifile -eq 0 ] ; then
+	    if [ $MULTIFILE -eq 0 ] ; then
 	        ./main $INPATH/${finalname}_list$INFMT --output $OUTPATH/$finalname$INFMT.root
 	    else
 	        ./main $INPATH/$finalname.${filenr}_list$INFMT --output $OUTPATH/${finalname}_$filenr$INFMT.root --is-not-file-header 1 --input-ref-info $OUTPATH/${finalname}_0$INFMT.root
