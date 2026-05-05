@@ -79,7 +79,7 @@ echo "==="
 # very latest run --> simply convert existing raw files
 echo "Now converting files of $runlastlast (very latest)..."
 echo "==="
-./fF_manualconvert.sh $INPATH $IDINFMT $OUTPATH 1 1 $MULTIFILE $runlastlast
+./fF_manualconvert.sh $INPATH $IDINFMT $OUTPATH 1 1 $MULTIFILE
 
 echo "==="
 

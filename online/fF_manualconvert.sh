@@ -16,7 +16,7 @@ IDINFMT=${2:-$idinfmtdefault}
 outpathdefault=.
 OUTPATH=${3:-$outpathdefault}
 
-#argument 4: if it is not 0, override runarray and run on the latest file
+#argument 4: if it is not 0, override runarray and run on the latest file (unless argument 7 is not RunX, see below)
 latestdefault=0
 LATEST=${4:-$latestdefault} 
 
@@ -28,7 +28,7 @@ RESET=${5:-$resetdefault}
 multifiledefault=1
 MULTIFILE=${6:-$multifiledefault}
 
-# argument 7: if LATEST (argument 4) is not 0 and this is not -1, this will be the run nr that will be processed (e.g Run123)
+# argument 7: if LATEST (argument 4) is not 0 and this is not RunX, this will be the run nr that will be processed (e.g Run123)
 overriderundefault=RunX
 OVERRIDERUN=${7:-$overriderundefault}
 
@@ -67,23 +67,7 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-Run305
-Run306
-Run307
-Run309
-Run310
-Run308
-Run311
-Run279
-Run280
-Run290
-Run291
-Run292
-Run283
-Run286
-Run288
-Run289
-Run293
+    Run351
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -116,6 +100,7 @@ for run in "${runarray[@]}" ; do
 	    if [ "$OVERRIDERUN" = "RunX" ] ; then
 	        latestrun=$(ls -1rt $INPATH | grep .0_list$INFMT | tail -n 1 | sed -e "s/\(.*\).0_list$INFMT/\1/")
 	        endfilenrs=$(ls -1 $INPATH | grep $latestrun | grep $INFMT | wc -l)
+		(( endfilenrs = $endfilenrs - 2 ))
             else
                 endfilenrs=$(ls -1 $INPATH | grep $OVERRIDERUN | grep $INFMT | wc -l)
 	    fi
@@ -127,7 +112,7 @@ for run in "${runarray[@]}" ; do
 	else
 	    if [ "$OVERRIDERUN" = "RunX" ] ; then
                 latestname0=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
-		if [ $MULTIFILE -eq 0 ] ; then
+		if [ $MULTIFILE -ne 0 ] ; then
                     if [ $filenr -lt 10 ] ; then
                         limnamestr=11
                     elif [ $filenr -lt 100 ] ; then
