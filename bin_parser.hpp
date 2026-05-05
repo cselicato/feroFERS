@@ -59,7 +59,7 @@ class EHEADER_ST {
     uint16_t ev_size;        // int 16 bit
     uint8_t board_Id;       // int 8 bit
     double TStamp;          // double 64
-    uint64_t dTRef;           // double 64
+    double dTRef;           // double 64
     uint64_t Trg_Id;        // int 64 bit
     uint64_t ch_mask;        // int 64 bit
     uint16_t nhitsembedded;  // int 16 bit

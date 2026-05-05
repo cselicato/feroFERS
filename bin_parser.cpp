@@ -1,7 +1,6 @@
 #include "modes_helpers.hpp"
 #include "bin_parser.hpp"
 
-
 // function to fill the variable stored_vars v for the binary file case
 void fill_info_var(FHEADER &fh, stored_vars &v, modes &mode){
     // fill v with the metadata cointained in the file header
@@ -72,7 +71,8 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
     modes acq_mod;
     TTree* tr_info_ref;
     TFile * fileinfo = nullptr;
-    TString * leaf_info_ref = nullptr;
+    TString * leaf_info_ref_acq_mode = nullptr;
+    TString * leaf_info_ref_time_unit = nullptr;
     if(isFileHeader){
         file.read(reinterpret_cast<char*>(&fh), sizeof(FHEADER));
         acq_mod = find_mode(fh.acq_mode);
@@ -83,9 +83,11 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             return 0;
         }
 	tr_info_ref=(TTree*)fileinfo->Get("info");
-	tr_info_ref->SetBranchAddress("acq_mode", &leaf_info_ref);
+	tr_info_ref->SetBranchAddress("acq_mode", &leaf_info_ref_acq_mode);
+	tr_info_ref->SetBranchAddress("time_unit", &leaf_info_ref_time_unit);
 	tr_info_ref->GetEntry(0);
-        acq_mod = find_mode( *leaf_info_ref );
+        acq_mod = find_mode( *leaf_info_ref_acq_mode );
+	fh.time_unit = *leaf_info_ref_time_unit=="ns" ? 0x1 : 0x0;
     }
 	
     // make trees' branches
@@ -104,7 +106,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
         tr_info->Fill();
     }else{
 	tr_info_ref->GetEntry(0);
-	v_ref.acq_mode= *leaf_info_ref;
+	v_ref.acq_mode= *leaf_info_ref_acq_mode;
 	tr_info->Fill();
 	fileinfo->Close();
     }
@@ -146,7 +148,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
 
-                    is_valid_ind(eh.board_Id, event.ch_Id);
+		    is_valid_ind(eh.board_Id, event.ch_Id);
 
                     v.data_type[eh.board_Id][event.ch_Id] = event.data_type;
 
@@ -195,7 +197,8 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 int hits_frag_timing = 0;
                 while (file.tellg()<(t_eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
-                    is_valid_ind(t_eh.board_Id, event.ch_Id);
+
+		    is_valid_ind(t_eh.board_Id, event.ch_Id);
 
                     v.data_type_timing[t_eh.board_Id][event.ch_Id][hits_frag_timing] = (int16_t)event.data_type;
 
@@ -234,7 +237,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             break;
 
         case modes::Spect_Timing:
-            while(file.tellg()<file_size){
+	    while(file.tellg()<file_size){
                 ev_start = file.tellg();
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh_st), sizeof(EHEADER_ST));
@@ -258,7 +261,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 // READ EVENT DATA
                 while (file.tellg()<(eh_st.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
-		    
+
                     is_valid_ind(eh_st.board_Id, event.ch_Id);
 
                     v.data_type[eh_st.board_Id][event.ch_Id] = event.data_type;

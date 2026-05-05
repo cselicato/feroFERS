@@ -67,7 +67,7 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-    Run351
+    Run334
 )
 
 # if requested, overwrite runarray to run on the latest file

@@ -87,7 +87,7 @@ void reset(T c[NBOARDS][NCHANNELS][MAXHITS]){
     }
 }
 
-void is_valid_ind(int board,int ch);
+void is_valid_ind(int board, int ch);
 modes find_mode(const TString& str);
 modes find_mode(uint8_t acq_mode);
 void reset_stored_vars(stored_vars &v, modes &mode);

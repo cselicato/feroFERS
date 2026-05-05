@@ -1,6 +1,6 @@
 #include "modes_helpers.hpp"
 
-void is_valid_ind(int board,int ch){
+void is_valid_ind(int board, int ch){
     if((board>=NBOARDS)||(ch>=NCHANNELS)){
         cout << "Board ID " << board << " and ch. ID " << ch << " are invalid."<< endl;
         throw runtime_error("Found invalid board ID or channel ID, unable to produce root file.");
@@ -14,7 +14,7 @@ modes find_mode(const TString& str) {
     if (str == "Timing_CStop"){cout << "Acquisition mode is: Timing_CStop. Set to Timing."<<endl;  return modes::Timing;}    
     if (str == "Spect_Timing"){cout << "Acquisition mode is: Spect_Timing."<<endl;  return modes::Spect_Timing;}
     if (str == "Counting"){cout << "Acquisition mode is: Counting."<<endl;  return modes::Counting;}
-    if (str == "Timing"){cout << "Acquisition mode is: Timing."<<endl;  return modes::Spect_Timing;}
+    if (str == "Timing"){cout << "Acquisition mode is: Timing."<<endl;  return modes::Timing;}
     
     else throw runtime_error("Unknown acquisition mode, unable to produce root file.");
 }
