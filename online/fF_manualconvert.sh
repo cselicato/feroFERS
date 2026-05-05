@@ -113,17 +113,18 @@ for run in "${runarray[@]}" ; do
 	    if [ "$OVERRIDERUN" = "RunX" ] ; then
                 latestname0=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
 		if [ $MULTIFILE -ne 0 ] ; then
-                    if [ $filenr -lt 10 ] ; then
-                        limnamestr=11
-                    elif [ $filenr -lt 100 ] ; then
-                        limnamestr=12
-                    elif [ $filenr -lt 1000 ] ; then
-                        limnamestr=13
-                    elif [ $filenr -lt 10000 ] ; then
-	                limnamestr=14
-                    elif [ $filenr -lt 100000 ] ; then
-                        limnamestr=15
-                    fi
+                    #if [ $filenr -lt 10 ] ; then
+                    #    limnamestr=12
+                    #elif [ $filenr -lt 100 ] ; then
+                    #    limnamestr=12
+                    #elif [ $filenr -lt 1000 ] ; then
+                    #    limnamestr=14
+                    #elif [ $filenr -lt 10000 ] ; then
+	            #    limnamestr=15
+                    #elif [ $filenr -lt 100000 ] ; then
+                    #    limnamestr=16
+                    #fi
+		    limnamestr=12
 		else
                     limnamestr=9
 		fi
