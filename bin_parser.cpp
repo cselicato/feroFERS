@@ -118,7 +118,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
 
     int ifrag = 0;
     int old_Trg_Id = -1;
-    double TStamp_cut = (fh.time_unit&0x1) ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
+    double TStamp_cut = (fh.time_unit&0x1) ? 5 : 10 ; // TStamp separation threshold in ns : LSB;
     double old_TStamp = -2*TStamp_cut;
     
     int hits, hits_frag_timing;
