@@ -67,7 +67,104 @@ $(ls -1 $INPATH/. | cut -c$RUNSTRL-$RUNSTRR | sort -r | uniq)
 )
 
 runarray=(
-    Run334
+Run1025
+Run1026
+Run1027
+Run1028
+Run1029
+Run1030
+Run1031
+Run1035
+Run1036
+Run1040
+Run1042
+Run1043
+Run1045
+Run1048
+Run1049
+Run1050
+Run1054
+Run1055
+Run1056
+Run1057
+Run1058
+Run1059
+Run1060
+Run1061
+Run1066
+Run1067
+Run1068
+Run1069
+Run1070
+Run1071
+Run1072
+Run1073
+Run1074
+Run1075
+Run1076
+Run1077
+Run1078
+Run1079
+Run1080
+Run1081
+Run1082
+Run1083
+Run1085
+Run1086
+Run1087
+Run1089
+Run1090
+Run1092
+Run1093
+Run1094
+Run1095
+Run1096
+Run1098
+Run1099
+Run1100
+Run1101
+Run1102
+Run1103
+Run1104
+Run1105
+Run1106
+Run1107
+Run1108
+Run1110
+Run1112
+Run1113
+Run1116
+Run1117
+Run1119
+Run1120
+Run1121
+Run1122
+Run1123
+Run1124
+Run1125
+Run1126
+Run1127
+Run1129
+Run1130
+Run1131
+Run1132
+Run1133
+Run1134
+Run1135
+Run1136
+Run1137
+Run1138
+Run1139
+Run1141
+Run1146
+Run1147
+Run1151
+Run1152
+Run1155
+Run1156
+Run1158
+Run1159
+Run1160
 )
 
 # if requested, overwrite runarray to run on the latest file
@@ -113,6 +210,7 @@ for run in "${runarray[@]}" ; do
 	    if [ "$OVERRIDERUN" = "RunX" ] ; then
                 latestname0=$(ls -rt $INPATH | grep $INFMT | tail -n 1)
 		if [ $MULTIFILE -ne 0 ] ; then
+		    # TBC, right now I had to set it manually!
                     #if [ $filenr -lt 10 ] ; then
                     #    limnamestr=12
                     #elif [ $filenr -lt 100 ] ; then
@@ -124,7 +222,7 @@ for run in "${runarray[@]}" ; do
                     #elif [ $filenr -lt 100000 ] ; then
                     #    limnamestr=16
                     #fi
-		    limnamestr=12
+		    limnamestr=11
 		else
                     limnamestr=9
 		fi
