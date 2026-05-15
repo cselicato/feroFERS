@@ -31,16 +31,18 @@ modes find_mode(uint8_t acq_mode) {
 void reset_stored_vars(stored_vars &v, modes &mode){
     switch (mode) {
         case modes::Spectroscopy:
-	    reset<Double_t>(v.TStamp);
+	        reset<Double_t>(v.TStamp);
             reset<uint64_t>(v.Trg_Id);
             reset<uint64_t>(v.ch_mask);
+			reset<Int_t>(v.hits);
             reset<int16_t>(v.data_type);
             reset<int32_t>(v.LG);
             reset<int32_t>(v.HG);
             break;
 
         case modes::Timing:
-	    reset<uint64_t>(v.Trg_Id);
+	        reset<uint64_t>(v.Trg_Id);
+			reset<Int_t>(v.hits);
             reset<int16_t>(v.data_type_timing);
             reset<float>(v.ToT_timing);
             reset<float>(v.ToA_timing);
@@ -48,11 +50,11 @@ void reset_stored_vars(stored_vars &v, modes &mode){
 
         case modes::Spect_Timing:
             reset<Double_t>(v.TStamp);
-	    reset<Double_t>(v.dTRef);
-	    reset<uint64_t>(v.Trg_Id);
-	    reset<uint64_t>(v.ch_mask);
-	    reset<Int_t>(v.hits);
-	    reset<int16_t>(v.data_type);
+	        reset<Double_t>(v.dTRef);
+	        reset<uint64_t>(v.Trg_Id);
+	        reset<uint64_t>(v.ch_mask);
+	        reset<Int_t>(v.hits);
+	        reset<int16_t>(v.data_type);
             reset<int32_t>(v.LG);
             reset<int32_t>(v.HG);
             reset<float>(v.ToT);
