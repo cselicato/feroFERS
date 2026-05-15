@@ -1,4 +1,4 @@
-#define NBOARDS 4
+#define NBOARDS 2
 #define NCHANNELS 64
 #define MAXHITS 100
 
@@ -42,11 +42,11 @@ class stored_vars
     TTimeStamp * time_UTC;
     TString time_unit;
     // data
-    Double_t TStamp;
-  //Double_t dTRef;
-    uint64_t Trg_Id;   
-    uint64_t ch_mask;     
-    Int_t hits;
+    Double_t TStamp[NBOARDS];
+    Double_t dTRef[NBOARDS];
+    uint64_t Trg_Id[NBOARDS];   
+    uint64_t ch_mask[NBOARDS];     
+    Int_t hits[NBOARDS];
     TString * p_file_format = &this->file_format;
     TString * p_janus_rel = &this->janus_rel;
     TString * p_acq_mode = &this->acq_mode;
@@ -65,7 +65,15 @@ class stored_vars
 
 };
 
-
+template<typename T>
+void reset(T c[NBOARDS]){
+    for (int i = 0; i < NBOARDS; i++) {
+        c[i] = static_cast<T>(-1);
+        if(c[i]>0){
+            c[i] = static_cast<T>(0);
+	}
+    }
+}
 
 template<typename T>
 void reset(T c[NBOARDS][NCHANNELS]){

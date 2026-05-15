@@ -82,16 +82,16 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
     switch (mode) {
         case modes::Spectroscopy:
 
-            v.Trg_Id = stoi(row[1]);
-            v.TStamp = stod(row[0]);
-            //v.hits = stoi(row[3]);
-            v.ch_mask = stoull(row[4], nullptr, 16);
-            
             ch_ID = stoi(row[5]);
             board= stoi(row[2]);
 
             is_valid_ind(board, ch_ID);
 
+            v.Trg_Id[board] = stoi(row[1]);
+            v.TStamp[board] = stod(row[0]);
+            //v.hits[board] = stoi(row[3]);
+            v.ch_mask[board] = stoull(row[4], nullptr, 16);
+	    
             v.data_type[board][ch_ID] = stoi(row[6], nullptr, 16);
             v.LG[board][ch_ID] = stoi(row[7]);
             v.HG[board][ch_ID] = stoi(row[8]);      
@@ -100,8 +100,8 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
 
         case modes::Timing:
 
-            //v.TStamp = stod(row[0]);
-            //v.hits = stoi(row[2]);
+            //v.TStamp[board] = stod(row[0]);
+            //v.hits[board] = stoi(row[2]);
 
             board= stoi(row[1]);
             ch_ID = stoi(row[3]);    
@@ -117,13 +117,13 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             break;            
 
         case modes::Spect_Timing:
-            v.Trg_Id = stoull(row[1]);
-            v.ch_mask = stoull(row[4], nullptr, 16);
-            v.TStamp = stod(row[0]);
-            //v.hits = stoi(row[3]);
-
             board= stoi(row[2]);
-            ch_ID = stoi(row[5]); 
+            ch_ID = stoi(row[5]);
+
+	    v.Trg_Id[board] = stoull(row[1]);
+            v.ch_mask[board] = stoull(row[4], nullptr, 16);
+            v.TStamp[board] = stod(row[0]);
+            //v.hits[board] = stoi(row[3]);
 
             is_valid_ind(board, ch_ID);      
 
@@ -136,14 +136,14 @@ void fill_data_var(vector<string> &row, modes &mode, stored_vars &v, int hit){
             break;
 
         case modes::Counting:
-            v.Trg_Id = stoull(row[1]);
-            v.TStamp = stod(row[0]);
-            v.ch_mask = stoull(row[4], nullptr, 16);
-            //v.hits = stoi(row[3]);
-
             board= stoi(row[2]);
             ch_ID = stoi(row[5]);  
 
+            v.Trg_Id[board] = stoull(row[1]);
+            v.TStamp[board] = stod(row[0]);
+            v.ch_mask[board] = stoull(row[4], nullptr, 16);
+            //v.hits[board] = stoi(row[3]);
+	    
             is_valid_ind(board, ch_ID);
 
             v.counts[board][ch_ID] = stoi(row[6]);
@@ -264,14 +264,14 @@ int parse_csv(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
 
             if ((new_TStamp-old_TStamp)*(new_TStamp-old_TStamp)>TStamp_cut*TStamp_cut){ // event is different OR first one, update old_TStamp
                 if (hit_tot>0){ // event is different: fill tree and LATER fill v
-                    v.hits = hit; // hits updated separately from fill_data_var for manual evaluation
+                    v.hits[board_now] = hit; // hits updated separately from fill_data_var for manual evaluation
                     tr_data->Fill();
                     hit = 0;
                     memset(hit_frag_timing, 0, NBOARDS*sizeof(int));
                 }
                 old_TStamp = new_TStamp;
                 reset_stored_vars(v, acq_mod);  // RESET v and hit BEFORE FILLING AGAIN
-		v.TStamp = stod(row[0]); // TStamp updated separately from fill_data_var for compatibility w/ binary files
+		v.TStamp[board_now] = stod(row[0]); // TStamp updated separately from fill_data_var for compatibility w/ binary files
             }
 
             fill_data_var(row, acq_mod, v, hit_frag_timing[board_now]);

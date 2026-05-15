@@ -31,19 +31,28 @@ modes find_mode(uint8_t acq_mode) {
 void reset_stored_vars(stored_vars &v, modes &mode){
     switch (mode) {
         case modes::Spectroscopy:
+	    reset<Double_t>(v.TStamp);
+            reset<uint64_t>(v.Trg_Id);
+            reset<uint64_t>(v.ch_mask);
             reset<int16_t>(v.data_type);
             reset<int32_t>(v.LG);
             reset<int32_t>(v.HG);
             break;
 
         case modes::Timing:
+	    reset<uint64_t>(v.Trg_Id);
             reset<int16_t>(v.data_type_timing);
             reset<float>(v.ToT_timing);
             reset<float>(v.ToA_timing);
             break;
 
         case modes::Spect_Timing:
-            reset<int16_t>(v.data_type);
+            reset<Double_t>(v.TStamp);
+	    reset<Double_t>(v.dTRef);
+	    reset<uint64_t>(v.Trg_Id);
+	    reset<uint64_t>(v.ch_mask);
+	    reset<Int_t>(v.hits);
+	    reset<int16_t>(v.data_type);
             reset<int32_t>(v.LG);
             reset<int32_t>(v.HG);
             reset<float>(v.ToT);
@@ -129,13 +138,13 @@ TTree * open_branches_info(TTree * t, const modes& mode, stored_vars &v){
 }
 
 TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
-    t->Branch("TStamp_us",&v.TStamp, "TStamp_us/D");
-    t->Branch("Num_Hits",&v.hits, "Num_Hits/I");
+  t->Branch("TStamp_us", v.TStamp, Form("TStamp_us[%i]/D",NBOARDS));
+  t->Branch("Num_Hits", v.hits, Form("Num_Hits[%i]/I",NBOARDS));
 
     switch (mode) {
         case modes::Spectroscopy:
-            t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
-            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
+            t->Branch("Trg_Id", v.Trg_Id, Form("Trg_Id[%i]/l",NBOARDS));
+            t->Branch("ch_mask", v.ch_mask, Form("ch_mask[%i]/l",NBOARDS));
             t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",NBOARDS));
             t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",NBOARDS));
             t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",NBOARDS));
@@ -152,9 +161,9 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
         
 
         case modes::Spect_Timing:
-	  //t->Branch("dTRef", &v.dTRef, "dTRef/D");
-            t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
-            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
+	    t->Branch("dTRef", v.dTRef, Form("dTRef[%i]/D",NBOARDS));
+            t->Branch("Trg_Id", v.Trg_Id, Form("Trg_Id[%i]/l",NBOARDS));
+            t->Branch("ch_mask", v.ch_mask, Form("ch_mask[%i]/l",NBOARDS));
             t->Branch("data_type", *v.data_type,Form("data_type[%i][64]/S",NBOARDS));
             t->Branch("PHA_LG",*v.LG,Form("PHA_LG[%i][64]/I",NBOARDS));
             t->Branch("PHA_HG",*v.HG,Form("PHA_HG[%i][64]/I",NBOARDS));
@@ -165,9 +174,9 @@ TTree * make_branches_data(TTree * t, const modes& mode, stored_vars &v){
 
 
         case modes::Counting:
-            t->Branch("Trg_Id",&v.Trg_Id, "Trg_Id/l");
-            t->Branch("ch_mask", &v.ch_mask, "ch_mask/l");
-            t->Branch("counts",*v.counts, Form("counts[%i][64]/L",NBOARDS));
+            t->Branch("Trg_Id", v.Trg_Id, Form("Trg_Id[%i]/l",NBOARDS));
+            t->Branch("ch_mask", v.ch_mask, Form("ch_mask[%i]/l",NBOARDS));
+            t->Branch("counts", &v.counts, Form("counts[%i][64]/L",NBOARDS));
 
             break;
 

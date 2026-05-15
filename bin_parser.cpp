@@ -35,15 +35,17 @@ void fill_info_var(FHEADER &fh, stored_vars &v, modes &mode){
 
 // PHA and PHA+Timing and counting
 void fill_data_var(EHEADER &eh, stored_vars &v){
-    v.TStamp = eh.TStamp;    
-    v.Trg_Id = eh.Trg_Id;   
-    v.ch_mask = eh.ch_mask; 
+    v.hits[eh.board_Id] = eh.nhitsembedded;
+    v.TStamp[eh.board_Id] = eh.TStamp;    
+    v.Trg_Id[eh.board_Id] = eh.Trg_Id;   
+    v.ch_mask[eh.board_Id] = eh.ch_mask; 
 }
 void fill_data_var(EHEADER_ST &eh, stored_vars &v){
-    v.TStamp = eh.TStamp;
-    //v.dTRef = eh.dTRef;
-    v.Trg_Id = eh.Trg_Id;
-    v.ch_mask = eh.ch_mask;
+    v.hits[eh.board_Id] = eh.nhitsembedded;
+    v.TStamp[eh.board_Id] = eh.TStamp;
+    v.dTRef[eh.board_Id] = eh.dTRef;
+    v.Trg_Id[eh.board_Id] = eh.Trg_Id;
+    v.ch_mask[eh.board_Id] = eh.ch_mask;
 }
 
 int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr_info, TTree * tr_data, stored_vars &v){
@@ -117,7 +119,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
     int ifrag = 0;
     int old_Trg_Id = -1;
     double TStamp_cut = (fh.time_unit&0x1) ? 1 : 2 ; // TStamp separation threshold in ns : LSB;
-    double old_TStamp = -2*TStamp_cut; // only used in timing, other modes use Trg_Id
+    double old_TStamp = -2*TStamp_cut;
     
     int hits, hits_frag_timing;
 
@@ -133,7 +135,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                     
                     // if this is not the first event read, finalise the stored_data object and fill the tree
                     if (ifrag>0){
-                        v.hits = hits;
+                        v.hits[eh.board_Id] = hits;
                         tr_data->Fill();
                     }
                     
@@ -166,7 +168,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             }
 	    
             //special update/fill for last event
-            v.hits = hits;
+            v.hits[eh.board_Id] = hits;
             tr_data->Fill();
             
             break;
@@ -182,15 +184,15 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                     
                     // if this is not the first event read, finalise the stored_data object and fill the tree
                     if (ifrag>0){
-                        v.hits = hits;
+                        v.hits[eh.board_Id] = hits;
                         tr_data->Fill();
                     }
                     
-                    // in any case, updateold_Trg_Id, reset hit count and update/reset various datas entries
+                    // in any case, update old_TStamp, reset hit count and update/reset various datas entries
                     old_TStamp = t_eh.TStamp;
                     hits = 0;
                     reset_stored_vars(v, acq_mod);
-                    v.TStamp = t_eh.TStamp;
+                    v.TStamp[eh.board_Id] = t_eh.TStamp;
                 }
 
                 // READ EVENT DATA
@@ -231,7 +233,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             }
             
             //special update/fill for last event
-            v.hits = hits;
+            v.hits[eh.board_Id] = hits;
             tr_data->Fill();
 
             break;
@@ -241,22 +243,27 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 ev_start = file.tellg();
                 // READ EVENT HEADER
                 file.read(reinterpret_cast<char*>(&eh_st), sizeof(EHEADER_ST));
-
-                // if there is a new Trg_Id...
-                if (eh_st.Trg_Id!=old_Trg_Id){
-                    
-                    // if this is not the first event read, finalise the stored_data object and fill the tree
+		
+                //// if there is a new reference...
+                //if (eh_st.Trg_Id!=old_Trg_Id){
+                if ((eh_st.TStamp-old_TStamp)*(eh_st.TStamp-old_TStamp)>TStamp_cut*TStamp_cut){ // difference within TStamp_cut set above
+		  
+                    // if this is not the first event read, fill the tree
                     if (ifrag>0){
-                        v.hits = hits;
+		        //v.hits[eh_st.board_Id] = hits;
+			//v.hits[eh_st.board_Id] = eh_st.nhitsembedded;
                         tr_data->Fill();
                     }
                     
-                    // in any case, updateold_Trg_Id, reset hit count and update/reset various datas entries
-                    old_Trg_Id = eh_st.Trg_Id;
-                    hits = 0;
+                    // in any case, in case of a new event update old reference and reset stored_vars
+                    //old_Trg_Id = eh_st.Trg_Id;
+		    old_TStamp = eh_st.TStamp;
+                    //hits = 0;
                     reset_stored_vars(v, acq_mod);
-                    fill_data_var(eh_st, v);
                 }
+
+		// new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
+		fill_data_var(eh_st, v);
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh_st.ev_size+ev_start)){
@@ -298,12 +305,13 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                             v.ToT[eh_st.board_Id][event.ch_Id] = (float)r.ToT_LSB;
                         }
                     }
-                    hits++;
+                    //hits++;
                 }
 		ifrag++;
             }
-            //special update/fill for last event
-            v.hits = hits;
+            //special fill for last event
+            //v.hits[eh_st.board_Id] = hits;
+	    //v.hits[eh_st.board_Id] = eh_st.nhitsembedded;
             tr_data->Fill();
             
             break;
@@ -319,7 +327,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                     
                     // if this is not the first event read, finalise the stored_data object and fill the tree
                     if (ifrag>0){
-                        v.hits = hits;
+                        v.hits[eh.board_Id] = hits;
                         tr_data->Fill();
                     }
                     
@@ -344,7 +352,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
             }
             
             //special update/fill for last event
-            v.hits = hits;
+            v.hits[eh.board_Id] = hits;
             tr_data->Fill();
             
             break;

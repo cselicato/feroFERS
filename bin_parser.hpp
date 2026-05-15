@@ -107,4 +107,5 @@ class read_vars
 
 void fill_info_var(FHEADER &fh, stored_vars &v, modes &mode);
 void fill_data_var(EHEADER &eh, stored_vars &v);
+void fill_data_var(EHEADER_ST &eh, stored_vars &v);
 int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr_info,TTree * tr_data, stored_vars &v);
