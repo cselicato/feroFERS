@@ -119,7 +119,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
     int ifrag = 0;
     int old_Trg_Id = -1;
     //double TStamp_cut = (fh.time_unit&0x1) ? 2 : 4 ; // TStamp separation threshold in ns : LSB;
-    double TStamp_cut = 0.1; // TStamp separation threshold (recall that TStamp is in us)
+    double TStamp_cut = 2; // TStamp separation threshold (recall that TStamp is in us)
     double old_TStamp = -2*TStamp_cut;
     bool align_TStamp = true; // align using TStamp (true) or Trg_Id (false) - in Timing mode TStamp is always used
     bool align_cond;
@@ -257,7 +257,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 file.read(reinterpret_cast<char*>(&eh_st), sizeof(EHEADER_ST));
 		
                 //// if there is a new reference...
-                align_cond = align_TStamp ? ((eh.TStamp-old_TStamp)*(eh.TStamp-old_TStamp)>TStamp_cut*TStamp_cut) : (eh.Trg_Id!=old_Trg_Id);
+                align_cond = align_TStamp ? ((eh_st.TStamp-old_TStamp)*(eh_st.TStamp-old_TStamp)>TStamp_cut*TStamp_cut) : (eh_st.Trg_Id!=old_Trg_Id);
 		if (align_cond){
 		  
                     // if this is not the first event read, fill the tree
