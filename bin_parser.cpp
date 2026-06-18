@@ -118,8 +118,11 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
 
     int ifrag = 0;
     int old_Trg_Id = -1;
-    double TStamp_cut = (fh.time_unit&0x1) ? 5 : 10 ; // TStamp separation threshold in ns : LSB;
+    //double TStamp_cut = (fh.time_unit&0x1) ? 2 : 4 ; // TStamp separation threshold in ns : LSB;
+    double TStamp_cut = 0.1; // TStamp separation threshold (recall that TStamp is in us)
     double old_TStamp = -2*TStamp_cut;
+    bool align_TStamp = true; // align using TStamp (true) or Trg_Id (false) - in Timing mode TStamp is always used
+    bool align_cond;
     
     int hits, hits_frag_timing;
 
@@ -131,31 +134,31 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
 		
                 //// if there is a new reference...
-                //if (eh.Trg_Id!=old_Trg_Id){
-                if ((eh.TStamp-old_TStamp)*(eh.TStamp-old_TStamp)>TStamp_cut*TStamp_cut){ // difference within TStamp_cut set above
-                    
+		align_cond = align_TStamp ? ((eh.TStamp-old_TStamp)*(eh.TStamp-old_TStamp)>TStamp_cut*TStamp_cut) : (eh.Trg_Id!=old_Trg_Id);
+                if (align_cond){
+		  
                     // if this is not the first event read, fill the tree
                     if (ifrag>0){
-		                //v.hits[eh.board_Id] = hits;
-			            //v.hits[eh.board_Id] = eh.nhitsembedded;
+		        //v.hits[eh.board_Id] = hits;
+			//v.hits[eh.board_Id] = eh.nhitsembedded;
                         tr_data->Fill();
                     }
                     
                     // in any case, in case of a new event update old reference and reset stored_vars
-                    //old_Trg_Id = eh.Trg_Id;
-		            old_TStamp = eh.TStamp;
+                    old_Trg_Id = eh.Trg_Id;
+		    old_TStamp = eh.TStamp;
                     //hits = 0;
                     reset_stored_vars(v, acq_mod);
                 }
 
-		        // new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
-		        fill_data_var(eh, v);
+                // new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
+		fill_data_var(eh, v);
 				
                 // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
 
-		            is_valid_ind(eh.board_Id, event.ch_Id);
+		    is_valid_ind(eh.board_Id, event.ch_Id);
 
                     v.data_type[eh.board_Id][event.ch_Id] = event.data_type;
 
@@ -168,13 +171,13 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                         v.HG[eh.board_Id][event.ch_Id] = r.HG;
                     }
                     //hits++;
-	            }
+	        }
                 ifrag++;
             }
 	    
             //special fill for last event
             //v.hits[eh.board_Id] = hits;
-	        //v.hits[eh.board_Id] = eh.nhitsembedded;
+	    //v.hits[eh.board_Id] = eh.nhitsembedded;
             tr_data->Fill();
             
             break;
@@ -200,15 +203,15 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                     reset_stored_vars(v, acq_mod);
                 }
 
-				// new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
-				v.TStamp[t_eh.board_Id] = t_eh.TStamp;
+                // new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
+                v.TStamp[t_eh.board_Id] = t_eh.TStamp;
 
                 // READ EVENT DATA
                 int hits_frag_timing = 0;
                 while (file.tellg()<(t_eh.ev_size+ev_start)){
                     file.read(reinterpret_cast<char*>(&event), sizeof(EDATA));
 
-		            is_valid_ind(t_eh.board_Id, event.ch_Id);
+                    is_valid_ind(t_eh.board_Id, event.ch_Id);
 
                     v.data_type_timing[t_eh.board_Id][event.ch_Id][hits_frag_timing] = (int16_t)event.data_type;
 
@@ -237,7 +240,7 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                     //hits++;
                     hits_frag_timing++;
                 }
-				v.hits[t_eh.board_Id] = hits_frag_timing;
+		v.hits[t_eh.board_Id] = hits_frag_timing;
                 ifrag++;
             }
             
@@ -254,25 +257,25 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 file.read(reinterpret_cast<char*>(&eh_st), sizeof(EHEADER_ST));
 		
                 //// if there is a new reference...
-                //if (eh_st.Trg_Id!=old_Trg_Id){
-                if ((eh_st.TStamp-old_TStamp)*(eh_st.TStamp-old_TStamp)>TStamp_cut*TStamp_cut){ // difference within TStamp_cut set above
+                align_cond = align_TStamp ? ((eh.TStamp-old_TStamp)*(eh.TStamp-old_TStamp)>TStamp_cut*TStamp_cut) : (eh.Trg_Id!=old_Trg_Id);
+		if (align_cond){
 		  
                     // if this is not the first event read, fill the tree
                     if (ifrag>0){
-		                //v.hits[eh_st.board_Id] = hits;
-			            //v.hits[eh_st.board_Id] = eh_st.nhitsembedded;
+                        //v.hits[eh_st.board_Id] = hits;
+                        //v.hits[eh_st.board_Id] = eh_st.nhitsembedded;
                         tr_data->Fill();
                     }
                     
                     // in any case, in case of a new event update old reference and reset stored_vars
-                    //old_Trg_Id = eh_st.Trg_Id;
-		            old_TStamp = eh_st.TStamp;
+                    old_Trg_Id = eh_st.Trg_Id;
+		    old_TStamp = eh_st.TStamp;
                     //hits = 0;
                     reset_stored_vars(v, acq_mod);
                 }
 
-		        // new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
-		        fill_data_var(eh_st, v);
+                // new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
+                fill_data_var(eh_st, v);
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh_st.ev_size+ev_start)){
@@ -316,12 +319,12 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                     }
                     //hits++;
                 }
-		        ifrag++;
+		ifrag++;
             }
 			
             //special fill for last event
             //v.hits[eh_st.board_Id] = hits;
-	        //v.hits[eh_st.board_Id] = eh_st.nhitsembedded;
+	    //v.hits[eh_st.board_Id] = eh_st.nhitsembedded;
             tr_data->Fill();
             
             break;
@@ -333,25 +336,25 @@ int parse_bin(string inFile, bool isNotFileHeader, string inFileInfo, TTree * tr
                 file.read(reinterpret_cast<char*>(&eh), sizeof(EHEADER));
                 
                 // if there is a new reference...
-                //if (eh.Trg_Id!=old_Trg_Id){
-                if ((eh.TStamp-old_TStamp)*(eh.TStamp-old_TStamp)>TStamp_cut*TStamp_cut){ // difference within TStamp_cut set above
-                    
+                align_cond = align_TStamp ? ((eh.TStamp-old_TStamp)*(eh.TStamp-old_TStamp)>TStamp_cut*TStamp_cut) : (eh.Trg_Id!=old_Trg_Id);
+		if (align_cond){
+		  
                     // if this is not the first event read, fill the tree
                     if (ifrag>0){
                         //v.hits[eh.board_Id] = hits;
-	                    //v.hits[eh.board_Id] = eh.nhitsembedded;
+                        //v.hits[eh.board_Id] = eh.nhitsembedded;
                         tr_data->Fill();
                     }
                     
                     // in any case, in case of a new event update old reference and reset stored_vars
-                    //old_Trg_Id = eh.Trg_Id;
-		            old_TStamp = eh_st.TStamp;
+                    old_Trg_Id = eh.Trg_Id;
+                    old_TStamp = eh_st.TStamp;
                     //hits = 0;
                     reset_stored_vars(v, acq_mod);
                 }
 
-		        // new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
-		        fill_data_var(eh, v);
+                // new event header variables are updated in stored_vars (after the latter was reset in case a new reference was spotted)
+                fill_data_var(eh, v);
 
                 // READ EVENT DATA
                 while (file.tellg()<(eh.ev_size+ev_start)){
